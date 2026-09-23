@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 MIRROR_DIR = Path(__file__).resolve().parents[1] / "packaging" / "public-mirror"
 
 
@@ -55,8 +57,12 @@ def test_pack_gitignore_variant_drifts_only_in_models_block() -> None:
     """`.gitignore.biodata-pack.public` 只允许与 `.gitignore.public` 在 models/ 规则块上差异
     （放行 models/ltr/ 制品）；其余行逐字一致——两文件各自演进时漂移当场红。"""
     root = MIRROR_DIR.parents[1]
-    base_lines = (root / ".gitignore.public").read_text(encoding="utf-8").splitlines()
-    variant_lines = (root / ".gitignore.biodata-pack.public").read_text(encoding="utf-8").splitlines()
+    base = root / ".gitignore.public"
+    variant = root / ".gitignore.biodata-pack.public"
+    if not (base.is_file() and variant.is_file()):
+        pytest.skip("gitignore 公开变体只存在于装配仓（骨架仓无）——本条在装配仓跑")
+    base_lines = base.read_text(encoding="utf-8").splitlines()
+    variant_lines = variant.read_text(encoding="utf-8").splitlines()
     diff = [line for line in variant_lines if line not in base_lines]
     diff += [line for line in base_lines if line not in variant_lines]
     allowed = {"models/", "models/*", "!models/ltr/", "# 例外：models/ltr/ 是 KB 级融合重排器制品（公开目录元数据+合成标签训练），随本仓发布。"}

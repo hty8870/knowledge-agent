@@ -167,6 +167,8 @@ def test_relative_import_resolution_on_real_files():
     assert "dataset_recommender.retrieval.query_lexicon" in mods
     assert "dataset_recommender.domain.registry" in mods
     pack = REPO_SRC / "domains" / "biodata" / "pack.py"
+    if not pack.is_file():
+        pytest.skip("骨架仓无 biodata 领域包（肉在装配仓）——包侧断言在装配仓跑")
     pack_mods = _imports(pack)
     assert "dataset_recommender.domain.pack" in pack_mods
     assert "dataset_recommender.domains.biodata.dimensions" in pack_mods
