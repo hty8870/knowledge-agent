@@ -11,4 +11,4 @@
 sentence-transformers>=2.2,<4
 # Preferred download source; the fetch script can fall back to Hugging Face.
 # 下限与安装版 model-win-x64.in 的精确钉版（modelscope==1.39.1）对齐。
-modelscope>=1.39.1
+modelscope>=1.40.1
