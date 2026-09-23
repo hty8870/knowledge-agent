@@ -1,0 +1,26 @@
+# Markdown 统一 LF：避免 autocrlf 在工作树产出 CRLF 触发治理校验失败
+*.md text eol=lf
+
+# git 钩子必须 LF：CRLF 的 shebang 会让 Git-for-Windows 的 bash 无法执行钩子。
+.githooks/* text eol=lf
+
+# 全项目行尾归一（仓库卫生）：所有文本签入 LF、checkout 也用 LF——消除 Windows autocrlf 造成的
+# CRLF↔LF「整文件假冲突」，让跨分支 / 跨 agent 的 diff 只反映真实改动。冻结基准与静态资源指纹本就按
+# 行尾归一（\r\n→\n）后哈希、对本策略免疫；此处只统一工作树行尾，不改任何文件内容。
+* text=auto eol=lf
+
+# PowerShell 脚本保持 CRLF（Windows 惯例；BOM/编码由 utf-8-sig 读取处理，与行尾无关）。
+*.ps1 text eol=crlf
+
+# 二进制资源：不做行尾 / 文本处理。
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.zip  binary
+*.whl  binary
+*.woff  binary
+*.woff2 binary
+*.gz   binary

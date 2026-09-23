@@ -1,0 +1,139 @@
+{
+  "note": "前端视觉回归基线。masks 的每条理由见各状态；重录：python scripts/visual_regression.py --record",
+  "shots": {
+    "home": {
+      "file": "home.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "clip": null,
+      "masks": {
+        "#memorySuggestions": "记忆建议条随 localStorage 记忆内容出现/消失，属用户数据非界面",
+        "#heroGreeting": "hero 轮播第一条是时段问候（早/中/晚文案随拍摄时刻变，interactions.js renderHeroGreeting）；reduced-motion 下轮播不启动、只显第一条，mask 它后首屏完全确定",
+        "#toast": "页面加载时的瞬态提示（如「检测到服务端已配好 AI 密钥…」），~3s 后淡出，拍摄时刻是否在场随机（与 MASK_SETTINGS 同款）"
+      },
+      "setup": "首页初始态：hero、推荐 chips、数据来源/发表时间两下拉"
+    },
+    "results": {
+      "file": "results.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "clip": null,
+      "masks": {},
+      "setup": "检索「人类乳腺癌」结果渲染完"
+    },
+    "sidebar-facets": {
+      "file": "sidebar-facets.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "clip": "#sideWork",
+      "masks": {
+        ".arx-run": "行动流/Agent 规划卡：文本随 LLM 路由决策与执行步骤变化（时序数据，非界面结构）",
+        ".cbh-prog": "对话板思考进度泡「正在更深一步思考…」：agent 处理中才出现，时序数据"
+      },
+      "setup": "检索「人类乳腺癌」后侧栏细化筛选页"
+    },
+    "sidebar-board": {
+      "file": "sidebar-board.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "clip": "#sideWork",
+      "masks": {
+        ".arx-run": "行动流/Agent 规划卡：文本随 LLM 路由决策与执行步骤变化（时序数据，非界面结构）",
+        ".cbh-prog": "对话板思考进度泡「正在更深一步思考…」：agent 处理中才出现，时序数据"
+      },
+      "setup": "检索「人类乳腺癌」后侧栏继续对话页（含输入条）"
+    },
+    "history-pop": {
+      "file": "history-pop.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "clip": "#histWin",
+      "masks": {
+        ".hist-meta": "行内「N 条 · 相对时间戳 · 共 M 轮」：fmtTime 相对时间随拍摄时刻变（browse.js:405-407）"
+      },
+      "setup": "先检索一次造历史，再开历史记录浮窗 #histWin"
+    },
+    "settings": {
+      "file": "settings.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "clip": null,
+      "masks": {
+        "#toast": "页面加载时的瞬态提示（如「检测到服务端已配好 AI 密钥…」），~3s 后淡出，拍摄时刻是否在场随机（2026-08-19 bl1 实测 settings 109.9↔102.5 KiB 全因此行）"
+      },
+      "setup": "打开设置抽屉（含用户记忆 / 使用反馈区块）"
+    },
+    "browse": {
+      "file": "browse.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "clip": null,
+      "masks": {
+        "#timelineUnknown": "未标注日期数据集的统计小字，从「正在统计…」异步刷新成计数，时序不可控"
+      },
+      "setup": "切数据集浏览视图"
+    },
+    "favorites": {
+      "file": "favorites.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "clip": "#libWin",
+      "masks": {},
+      "setup": "开「我的库」浮窗切收藏页签（干净上下文 = 空态）"
+    },
+    "help": {
+      "file": "help.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "clip": null,
+      "masks": {},
+      "setup": "切帮助视图"
+    },
+    "mobile-home": {
+      "file": "mobile-home.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "clip": null,
+      "masks": {
+        "#memorySuggestions": "记忆建议条随 localStorage 记忆内容出现/消失，属用户数据非界面",
+        "#heroGreeting": "hero 轮播第一条是时段问候（早/中/晚文案随拍摄时刻变，interactions.js renderHeroGreeting）；reduced-motion 下轮播不启动、只显第一条，mask 它后首屏完全确定",
+        "#toast": "页面加载时的瞬态提示（如「检测到服务端已配好 AI 密钥…」），~3s 后淡出，拍摄时刻是否在场随机（与 MASK_SETTINGS 同款）"
+      },
+      "setup": "移动视口首页初始态"
+    },
+    "mobile-drawer": {
+      "file": "mobile-drawer.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "clip": null,
+      "masks": {
+        "#memorySuggestions": "记忆建议条随 localStorage 记忆内容出现/消失，属用户数据非界面",
+        "#heroGreeting": "hero 轮播第一条是时段问候（早/中/晚文案随拍摄时刻变，interactions.js renderHeroGreeting）；reduced-motion 下轮播不启动、只显第一条，mask 它后首屏完全确定",
+        "#toast": "页面加载时的瞬态提示（如「检测到服务端已配好 AI 密钥…」），~3s 后淡出，拍摄时刻是否在场随机（与 MASK_SETTINGS 同款）"
+      },
+      "setup": "移动视口点开侧栏抽屉"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+# 桌面窗口壳的可选依赖（桌面壳批）：
+# - 不装它：桌面启动器照常工作，只是「开窗口」回退为「开系统浏览器」（webview_shell.py 的
+#   _load_webview 返回 None → 回退路径；日志有提示）。
+# - 装了它：BioDataAgent.exe / scripts/run_app.py 在 --window（或 BIODATA_SHELL=window）
+#   时弹原生窗口（Windows=WebView2/EdgeChromium、macOS=WKWebView、Linux=WebKitGTK）。
+# 版本钉 5.4.x（验证：实现按 5.4 行为开发与验证，`>=5.0` 会解析到 6.x 不可声称同行为；
+# 5.4 依赖 pythonnet + 自带 PyInstaller hook——frozen 纳入需把完整解析结果并进 runtime lock，
+# 属合并后主树构建批）。
+# 不进入 requirements-ci.lock：离线质量门与 CI 无窗口环境用不到，且 hash 锁需整体重生成。
+pywebview>=5.4,<6

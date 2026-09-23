@@ -1,0 +1,12 @@
+#!/bin/sh
+# BioData opt-in pre-commit：跑 scripts/precommit_check.py
+#   （暂存 secret 值扫描 + .py 语法编译 + .js node --check）。
+# 工具容错、非 fail-closed：找不到可用 python 直接放行、不阻断提交。
+# 装：scripts/install-hooks.ps1（设 core.hooksPath=.githooks）。绕过单次：git commit --no-verify。
+for PY in py python3 python; do
+  if command -v "$PY" >/dev/null 2>&1 && "$PY" -c "import sys" >/dev/null 2>&1; then
+    exec "$PY" scripts/precommit_check.py
+  fi
+done
+echo "[pre-commit] 未找到可用 python，跳过检查（非阻断）。" >&2
+exit 0

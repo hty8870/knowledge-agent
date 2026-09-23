@@ -1,0 +1,54 @@
+# BioData Agent 网页版（灰度）——docker compose 服务定义
+# 完整操作手册见 deploy/web/README.md；部署/回退统一走 /opt/biodata-web/deploy.sh。
+#
+# 镜像 tag 经 /opt/biodata-web/.env 的 IMAGE_TAG 注入（deploy.sh 负责写入、健康等待与自动回退）；
+# BIODATA_TRUSTED_HOSTS（Host 守卫白名单）同在 .env，未来换域名只改那一行。
+services:
+  biodata-web:
+    image: biodata-web:${IMAGE_TAG:?need IMAGE_TAG in /opt/biodata-web/.env (e.g. 2.6.0-g<短sha>)}
+    container_name: biodata-web
+    ports:
+      # 只向宿主 loopback 发布。公网流量必须先经过 TLS 反向代理；禁止把应用端口
+      # 直接绑定 0.0.0.0。反向代理模板见 nginx.biodata.conf.example。
+      - "127.0.0.1:${BIODATA_PROXY_PORT:-8510}:8510"
+    volumes:
+      # 运行态数据（账号 .userdata / 上传 external / trace / 日志 / run）全部落宿主卷，
+      # 回退换 tag 不动数据；宿主侧属主必须为 uid 1000（容器内 biodata 用户）。
+      # 宿主目录可用 BIODATA_DATA_DIR 覆盖（默认 /data/biodata-web，与生产布局一致）。
+      - ${BIODATA_DATA_DIR:-/data/biodata-web}:/data
+    # 密钥与部署参数：root:600，由部署流程安装（README §4）；进程环境优先于应用内 .env 发现链
+    env_file:
+      - ${BIODATA_DEPLOY_DIR:-/opt/biodata-web}/.env
+    environment:
+      # portable 双根分离（runtime_paths）：语料/静态资源读镜像内 /app，写侧全部落 /data
+      BIODATA_DATA_ROOT: /data
+      # Host 守卫白名单：灰度放行公网 IP；纯 HTTP 灰度期唯一入口。
+      # 必填且无历史地址兜底：缺它 compose 直接报错 = fail-closed，与 run_web 启动校验同口径。
+      BIODATA_TRUSTED_HOSTS: ${BIODATA_TRUSTED_HOSTS:?must set BIODATA_TRUSTED_HOSTS}
+      # 本 compose 专用于公网多用户 profile：账户门与 Secure cookie 不是可选项。
+      # 本地单机形态不使用本 compose，仍由普通启动器保持 loopback 默认。
+      BIODATA_REQUIRE_ACCOUNT: "1"
+      BIODATA_COOKIE_SECURE: "1"
+      # 宿主 loopback 是唯一入口，故容器内可信任反向代理转发头；Internet 客户端
+      # 无法直接连接 8510 伪造 X-Forwarded-*。
+      FORWARDED_ALLOW_IPS: "*"
+      PORT: 8510
+      BIODATA_WEB_HOST: 0.0.0.0
+      # 设计红线：单 worker 单进程（in-memory 状态是审计确认的既定取舍）
+      UVICORN_WORKERS: 1
+      PYTHONUNBUFFERED: 1
+    restart: unless-stopped
+    mem_limit: 1536m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      # 容器内走 loopback Host，webapp Host 守卫天然放行；镜像内无 curl，用 python 自检
+      test: ["CMD", "python", "-c", "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8510/api/health', timeout=4).status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      # 启动含语料装载与召回预热（本镜像无本地模型，预热秒过），start_period 给足
+      start_period: 60s
+      retries: 5

@@ -1,0 +1,48 @@
+version: 2
+# 局限（验证）：CI/候选发布实际以 --require-hashes 安装 uv 生成的 requirements/requirements-ci.lock。
+# Dependabot 的 pip 生态**不识别 .lock 扩展**（dependabot-core#9368），只会对 requirements*.txt 开 PR，
+# **不会**重生成该 lock；合并这类 PR 后 CI 仍装旧 lock，绿灯是"假新鲜"。因此 pip PR 视作**建议性**：
+# 合并前须人工/工具重跑 `uv pip compile requirements/requirements-ci.txt --generate-hashes -o requirements/requirements-ci.lock`
+# 使 lock 同步。（有远程后可加一条 CI 步骤：重生成 lock 并在与提交版不一致时 fail，把漂移变成硬门。）
+# （一级目录整理：requirements 群迁入 requirements/，pip 生态 directory 随迁。）
+updates:
+  - package-ecosystem: pip
+    directory: /requirements
+    schedule:
+      interval: weekly
+      day: monday
+      time: "03:00"
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 5
+    groups:
+      ci-python-dependencies:
+        patterns:
+          - "*"
+    # 下列依赖为「有意不跟」而非遗漏（2026-09-07 dependabot 组升级私仓落地时逐项裁定）：
+    # - mcp：1.28.1 是冻结运行时 runtime-win-x64.in + MCP 安装教程 + setup_mcp.ps1 的
+    #   合同钉版；2.x 大版本须随安装器构建验证专项整体升级，不接受孤立 bump。
+    # - websockets：langgraph-sdk 约束 <17（uv 实测冲突），须等上游放宽后随 langgraph 栈跟进。
+    # - sentence-transformers：安装版模型组件 model-win-x64.in 精确钉 3.4.1，6.x 大版本
+    #   须模型组件（fetch/冻结 spec/安装器）专项验证。
+    # - pywebview：runtime-win-x64.in 文档化钉 <6（上游 6.x 行为未验证不进包）。
+    # - scanpy/pandas/scipy/anndata/h5py：仅 loadsmoke 可选组件使用，保持 Python 3.10 可装；
+    #   新一代要求 >=3.12，待主线 Python floor 提升后整体跟进。
+    ignore:
+      - dependency-name: "mcp"
+      - dependency-name: "websockets"
+      - dependency-name: "sentence-transformers"
+      - dependency-name: "pywebview"
+      - dependency-name: "scanpy"
+      - dependency-name: "pandas"
+      - dependency-name: "scipy"
+      - dependency-name: "anndata"
+      - dependency-name: "h5py"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "03:30"
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 5

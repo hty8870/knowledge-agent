@@ -1,0 +1,13 @@
+# -*- coding: utf-8 -*-
+# 安装版可选本地语义模型运行组件（Windows x64 / CPython 3.12）。
+# 权重不在此清单：用户在安装器中显式勾选后，model_installer 再从固定
+# ModelScope/HuggingFace id 下载到 data_root/models/。
+#
+# 编译命令（只允许 wheel，CPU torch，逐包 SHA-256）：
+#   uv pip compile model-win-x64.in --python 3.12 --python-platform windows \
+#       --torch-backend cpu --generate-hashes --only-binary=:all: \
+#       -o model-win-x64.lock
+
+# 与现有开发环境/requirements/requirements-embeddings.txt 的受支持范围一致；安装版必须精确钉版。
+sentence-transformers==3.4.1
+modelscope==1.39.1

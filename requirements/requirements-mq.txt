@@ -1,0 +1,8 @@
+# 可选依赖：Redis 会话后端 + RQ 消息队列任务后端（2026-09-08 Redis/MQ 批）。
+# 不装不影响任何既有功能——未安装且未设对应 env 开关时，会话走默认 JSON 文件 +
+# 进程内缓存，corpus-sync 走进程内线程 job，行为与历史逐字节一致。
+# 启用：BIODATA_SESSION_STORE=redis / BIODATA_JOB_BACKEND=rq（另需 Redis 服务，
+# 见 deploy/web/docker-compose.mq.example.yml 与 deploy/web/README.md §10）。
+# 安装：pip install -r requirements/requirements-mq.txt
+redis>=8.1.0
+rq>=2.12.0

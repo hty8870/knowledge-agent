@@ -1,0 +1,11 @@
+# BioData Agent 遥测接收端（services/telemetry-receiver）顶层依赖约束
+# 部署：docker build 内 pip install --require-hashes -r requirements.lock（完整解析树 + SHA-256）。
+# 本文件是「可读的顶层版本钉板」；改这里后必须按 README 更新流程重新生成 requirements.lock。
+# 说明：uvicorn 不带 [standard] extras——接收端生产容器不需要 reload/watchfiles/uvloop，
+# 减小依赖面与锁体积（生产依赖最小化）。
+fastapi==0.141.1
+uvicorn==0.52.4
+sqlalchemy==2.0.52
+psycopg2-binary==2.9.12
+# 意见反馈解密（ECDH/HKDF/AES-256-GCM，见 app.py）；改这里后必须重生成 requirements.lock
+cryptography==50.0.1

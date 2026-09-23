@@ -1,0 +1,95 @@
+# ---- 密钥：绝对不能提交 ----
+.env
+.env.zhipu
+# .env.* 一并忽略，覆盖今后新增的本地环境文件（如 .env.production），避免漏配时静默入库。
+# 显式放行入库模板（纯示例、无真实密钥）：根目录 .env.example / .env.zhipu.example，
+# 以及遥测接收端子目录 services/telemetry-receiver/.env.example。
+.env.*
+!.env.example
+!.env.zhipu.example
+!services/telemetry-receiver/.env.example
+# 私钥/对称密钥一律不入库（本机 SSH/API 私钥等）；按后缀通配，避免漏收。
+*.pem
+*.key
+# 个人化交付敏感词清单：scripts/make_delivery.py 的个人层黑名单来源（真名/内部称谓等，
+# 已从源码外置到这里）；与 .env 同级处理，只存本机、绝不入库/交付。
+.delivery-tokens.local
+
+# ---- 体积大 / 外部依赖 ----
+langchain-master/
+
+# ---- 旧备份（已有 git 后不再需要跟踪） ----
+backup_*/
+
+# ---- 运行产物 / 日志 ----
+outputs/
+artifacts/
+*.log
+# 启动器运行时状态：固定端口持久化 runtime.json 与 run/ 实例记录/迁移 staging——
+# 本机生成、逐实例不同，不入库（data_root 重定向时同样落于数据根下）
+runtime.json
+run/
+# 启动器（launch_web.ps1）首启完成标记：空文件、逐机生成、非交付物（test_launcher_first_run_setup 只钉它在根目录）
+.biodata-setup-done
+# 附加重排评测的即时报告：LLM 输出不可复现，不入库（避免伪装成固定结果，可用 scripts/evaluate_rerank.py 重生）
+eval/rerank_report.json
+# 向量召回评测报告：确定性但依赖本地模型权重（不在库里），不入库，可用 scripts/evaluate_recall.py 重生
+eval/recall_report.json
+# 评测盲跑的原始 run 与摘要：LLM 输出不可复现、一次性实验，不入库
+eval/run_blind_*.jsonl
+eval/run_blind_*_summary.json
+
+# ---- 可选：向量召回的本地稠密嵌入模型权重（几十~几百 MB，公开可重下，不入库） ----
+models/
+
+# ---- Python ----
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+
+# ---- 本地工具配置（预览/启动，仅本机用，不入库） ----
+.claude/
+
+# ---- 本地账户数据（用户名 + scrypt 密码哈希，仅本机、绝不入库/交付） ----
+.userdata/
+
+# ---- 本机工作笔记（不入库） ----
+工作笔记/
+
+# ---- 本地草稿 / 个人汇报（保留在本地、不入项目历史；含 .md 原稿与导出的 .docx/.pdf 等） ----
+*汇报_*
+
+# ---- 本地验收截图脚手架（不入项目历史） ----
+*-shots/
+.census/
+
+# ---- 一次性 UI 冒烟脚手架与截图（本地验证证据，不入项目历史） ----
+scripts/_*
+
+# ---- curate sync 运行时入库产物（本机同步生成；不入 git、不进交付，接收方运行同步可再得） ----
+database/external/upload_*.json
+
+# ---- 运行时产物（本机生成、可再得，不入库） ----
+database/trace/
+# 本地验证工作目录（本机验证残留，不入库、不进交付）
+_*_check/
+
+# ---- 评测运行产物（本机生成、可再得，不入库） ----
+eval/agent_live_run_*.jsonl
+eval/agent_live_report_*.md
+eval/search_live_run_*.jsonl
+eval/search_live_report_*.md
+eval/latency_ab_*
+eval/data_quality_audit.*
+eval/entity_gap_report.*
+eval/metadata_coverage.*
+eval/provisioning_report.*
+eval/agent_decide_capture.jsonl
+eval/bakeoff_*.json
+eval/frozen_after_patch_*.json
+
+# 本机临时文件（不入库）
+回滚-恢复GBK代码页.reg

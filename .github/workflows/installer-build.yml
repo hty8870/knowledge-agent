@@ -1,0 +1,169 @@
+name: Installer build (unsigned-dev)
+
+# 构建冻结运行时、Inno Setup unsigned-dev 安装器与供应链产物。
+# 本 job 是「配置」不是远程运行证据——没有对应 GitHub Actions 记录前，不得声称 CI 已实跑。
+#
+# 数字签名仍未接通：CI 无 Authenticode 凭据，产物一律带 unsigned-dev 标并如实标注；
+# 签名合同见 packaging/signing/README.md。
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "packaging/**"
+      - ".github/workflows/installer-build.yml"
+      - "scripts/build_windows_runtime.py"
+      - "scripts/build_windows_installer.py"
+      - "scripts/build_supply_chain.py"
+      - "src/dataset_recommender/app/mcp_server.py"
+      - "src/**"
+      - "web/static/**"
+      - "database/base/**"
+      - "database/external/*.json"
+      - "database/external/README.md"
+      - "prompts/**"
+      - ".agents/skills/biodata-dataset-discovery/**"
+      - "使用教程/**"
+      - "tests/test_installer_contract.py"
+      - "tests/test_frozen_runtime_contract.py"
+      - "tests/test_migrate_from.py"
+      - "tests/test_installer_e2e.py"
+      - "tests/test_supply_chain.py"
+
+# 与 ci.yml 同一安全姿态：无默认 token 权限；仅检出作业获得最小只读权限。
+permissions: {}
+
+concurrency:
+  group: installer-build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTHONUTF8: "1"
+  PYTHONHASHSEED: "0"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  HF_HUB_OFFLINE: "1"
+  TRANSFORMERS_OFFLINE: "1"
+  BIODATA_ALLOW_MODEL_DOWNLOAD: "0"
+  BIODATA_CI_OFFLINE: "1"
+
+jobs:
+  build-runtime-and-supply-chain:
+    name: build frozen runtime + supply chain (unsigned-dev)
+    runs-on: windows-2025
+    timeout-minutes: 60
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the exact revision
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: packaging/requirements/runtime-win-x64.lock
+
+      - name: Create the isolated build venv from the reviewed hash-locked requirements
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python -m venv build-venv
+          # 不要加回 --only-binary=:all:：runtime 锁内 proxy-tools==0.1.0 只有 sdist 无 wheel
+          # （见 packaging/requirements/runtime-win-x64.in:9 注释，desktop 壳批 ds1 起已去掉该口径），
+          # 强制 only-binary 会让干净 CI 环境在这个 sdist 上安装失败。
+          & build-venv\Scripts\python.exe -m pip install `
+            --require-hashes `
+            -r packaging\requirements\runtime-win-x64.lock `
+            -r packaging\requirements\build-win-x64.lock
+
+      - name: Build the frozen runtime (PyInstaller onedir, outside the workspace)
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & build-venv\Scripts\python.exe scripts\build_windows_runtime.py `
+            --build-venv build-venv --out $env:RUNNER_TEMP\biodata-build
+
+      - name: Install pinned Inno Setup 6.7.3
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $url = 'https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/innosetup-6.7.3.exe'
+          $expected = '9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732'
+          $installer = Join-Path $env:RUNNER_TEMP 'innosetup-6.7.3.exe'
+          $innoDir = Join-Path $env:RUNNER_TEMP 'inno-6.7.3'
+          Invoke-WebRequest -Uri $url -OutFile $installer
+          $actual = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $expected) { throw "Inno Setup SHA-256 mismatch: $actual" }
+          $proc = Start-Process -FilePath $installer -Wait -PassThru -ArgumentList @(
+            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', "/DIR=$innoDir"
+          )
+          if ($proc.ExitCode -ne 0) { throw "Inno Setup install failed: $($proc.ExitCode)" }
+          $iscc = Join-Path $innoDir 'ISCC.exe'
+          if (-not (Test-Path -LiteralPath $iscc -PathType Leaf)) { throw "ISCC missing: $iscc" }
+          Add-Content -LiteralPath $env:GITHUB_ENV -Value "ISCC_PATH=$iscc"
+
+      - name: Build the Inno Setup installer (unsigned-dev)
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & build-venv\Scripts\python.exe scripts\build_windows_installer.py `
+            --build-venv build-venv --out $env:RUNNER_TEMP\biodata-build
+
+      - name: Generate the supply-chain artifacts (SBOM / NOTICEs / build tools record)
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $installers = @(Get-ChildItem -LiteralPath $env:RUNNER_TEMP\biodata-build -Filter '*-unsigned-dev.exe' -File)
+          if ($installers.Count -ne 1) { throw "Expected exactly one unsigned-dev installer, got $($installers.Count)" }
+          & build-venv\Scripts\python.exe scripts\build_supply_chain.py `
+            --build-venv build-venv `
+            --out $env:RUNNER_TEMP\biodata-build\supply-chain `
+            --installer $installers[0].FullName
+
+      - name: Stage unsigned-dev artifacts (no signing credentials in CI)
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $staging = "$env:RUNNER_TEMP\biodata-build\artifacts"
+          New-Item -ItemType Directory -Force -Path $staging | Out-Null
+          Copy-Item -Recurse "$env:RUNNER_TEMP\biodata-build\dist\BioDataAgent" "$staging\BioDataAgent"
+          Copy-Item -Recurse "$env:RUNNER_TEMP\biodata-build\supply-chain" "$staging\supply-chain"
+          Copy-Item "$env:RUNNER_TEMP\biodata-build\*-unsigned-dev.exe" $staging
+          Copy-Item "$env:RUNNER_TEMP\biodata-build\*-unsigned-dev.exe.sha256" $staging
+          Get-ChildItem $staging | Select-Object Name
+
+      - name: Upload frozen runtime artifact (unsigned-dev)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: biodata-agent-frozen-runtime-unsigned-dev
+          path: ${{ runner.temp }}\biodata-build\artifacts\BioDataAgent
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload supply-chain artifact (unsigned-dev)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: biodata-agent-supply-chain-unsigned-dev
+          path: ${{ runner.temp }}\biodata-build\artifacts\supply-chain
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Windows installer artifact (unsigned-dev)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: biodata-agent-windows-installer-unsigned-dev
+          path: |
+            ${{ runner.temp }}\biodata-build\artifacts\*-unsigned-dev.exe
+            ${{ runner.temp }}\biodata-build\artifacts\*-unsigned-dev.exe.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Note unsigned-dev status
+        run: |
+          echo "CI 无签名凭据：本作业产物为 unsigned-dev（未签名），仅用于验证，不得作为正式发布物分发。"
+          echo "正式发布签名流程见 packaging/signing/README.md。"

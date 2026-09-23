@@ -1,0 +1,76 @@
+# BioData Agent 可选 Redis/MQ 增强 —— compose override 示例（学习/演示用，2026-09-08）
+#
+# 定位与红线
+#   - 这是**可选叠加层**：默认部署（docker-compose.web.yml 单文件）不需要 Redis，一行不动；
+#     未设三个开关变量时代码行为与历史逐字节一致。
+#   - 本文件**不接入** deploy.sh，不参与 CI，不进入生产发布流程。
+#     若未来投产（多实例、公网可达性、Redis 备份/持久化口径、镜像供应），须另行评审决策。
+#   - 镜像前提：默认发布镜像只装 deploy/web/requirements-web.lock，**不含 redis/rq**。
+#     演示前需自行构建扩展镜像（在镜像里追加
+#     `pip install --no-cache-dir redis>=8.1.0 rq>=2.12.0`，版本口径见
+#     requirements/requirements-mq.txt），或干脆本机源码形态演示（本机 Redis +
+#     pip install -r requirements/requirements-mq.txt，不经 Docker）。
+#
+# 用法（deploy/web/ 下，与基础 compose 叠加）：
+#   docker compose --env-file .env \
+#     -f docker-compose.web.yml -f docker-compose.mq.example.yml -p biodata-web up -d
+# 回到默认形态：去掉本 override 重新 up -d；开关变量只在本文件内设置，基础 .env 无需改动。
+#
+# 三个开关的语义真源在代码侧注释：redis_sessions.py / accounts.py（BIODATA_SESSION_STORE）、
+# rq_jobs.py（BIODATA_JOB_BACKEND）、redis_store.py（BIODATA_REDIS_URL）。
+services:
+  biodata-web:
+    environment:
+      BIODATA_SESSION_STORE: redis          # 会话改存 Redis（缺省 JSON 文件后端不变）
+      BIODATA_JOB_BACKEND: rq                 # corpus-sync 改投 RQ 队列，由 worker 跨进程执行
+      BIODATA_REDIS_URL: redis://redis:6379/0 # 仅容器内网可达，不发布宿主端口
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    # 演示钉 minor tag；若哪天投产再钉 digest（与基础镜像的 digest 纪律对齐）。
+    image: redis:8.2-alpine
+    container_name: biodata-redis
+    # 不发布任何宿主端口：只有同项目容器网络可达（web/worker）。AOF 持久化保 job 状态与
+    # 会话数据跨容器重启不丢；everysec 是性能/持久性的常规模中点。
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  biodata-worker:
+    # 与 web 同一镜像（扩展版）：worker 执行体复用 webapp._corpus_sync_execute 单通道，
+    # 写侧落同一个 /data 卷（.userdata / external 上传 / 语料向量重建产物）。
+    image: biodata-web:${IMAGE_TAG:?need IMAGE_TAG in /opt/biodata-web/.env (e.g. 2.6.0-g<短sha>)}
+    container_name: biodata-worker
+    env_file:
+      - ${BIODATA_DEPLOY_DIR:-/opt/biodata-web}/.env
+    environment:
+      BIODATA_DATA_ROOT: /data
+      BIODATA_REDIS_URL: redis://redis:6379/0
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ${BIODATA_DATA_DIR:-/data/biodata-web}:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    # worker 只消费队列（队列名/状态 key 真源在 rq_jobs），不需要 BIODATA_JOB_BACKEND——
+    # 那个开关由 web 进程读取，决定任务是否投队列。
+    command: ["python", "-m", "dataset_recommender.app.rq_worker"]
+    restart: unless-stopped
+    mem_limit: 1536m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  redis-data:

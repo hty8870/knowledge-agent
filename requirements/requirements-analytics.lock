@@ -1,0 +1,5 @@
+# Optional analytics dependency, locked for the two supported CPython 3.12 targets.
+# Install with: <python> -m pip install --require-hashes -r requirements-analytics.lock
+pyarrow==25.0.1 \
+    --hash=sha256:5389cdf79447ed1515c9e31620e6e1e2302249564d603f2ad727d4f6d313e4c3 \
+    --hash=sha256:8858d7bfc22e3f51529aeaa4077225029724623e4595dc9eff8c793935c34140

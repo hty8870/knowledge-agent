@@ -1,0 +1,161 @@
+{
+  "format": "decider-router-v1",
+  "base_model": "Qwen/Qwen3-1.7B",
+  "adapter": "adapter",
+  "system": "你是决策器，只回答给定选项中的一个词。",
+  "training_mode": "rlcd",
+  "tasks": {
+    "binary": {
+      "options": [
+        "write",
+        "read"
+      ],
+      "prompt": "句子：{utt}\n任务：判断处理这句话是否需要用到会产生本地下载或数据写入后果的工具。\nwrite=打包下载数据集、导出引文、生成投稿材料、把数据入库/删除/恢复/同步进用户的外部库（含联网搜来入库、检查更新并同步）；\nread=其余一切：找数据、改检索条件、查看/重排/对比/兼容/FAIR、查库容、检查更新（只看不同步）、联网搜（只搜不入库）、清点外部库、取消/否定先前动作、概念问答、闲聊。拿不准判 read。\n只答 write 或 read",
+      "option_token_ids": {
+        "write": 4934,
+        "read": 878
+      },
+      "temperature": 1.2945485061421278
+    },
+    "prelim": {
+      "options": [
+        "retrieve",
+        "skip"
+      ],
+      "prompt": "句子：{utt}\n任务：判断处理这句话是否需要先跑一遍本地数据集检索。\nretrieve=找数据/问有没有某数据/改检索条件（含口语、拼音、英文、错字、「换成人的再查一遍」这类指代改条件）；\nskip=管护动作（下载/引文/检查更新/入库/同步/清点）、库容问答、概念问答、闲聊、取消先前动作。\n只答 retrieve 或 skip",
+      "option_token_ids": {
+        "retrieve": 55527,
+        "skip": 20599
+      },
+      "temperature": 1.193586983501221
+    }
+  },
+  "operating_points": {
+    "binary": {
+      "kind": "cascade",
+      "tau": 0.963840901851654
+    },
+    "prelim": {
+      "kind": "recall_floor",
+      "tau_retrieve": 0.30199605226516724,
+      "band_lo": 0.0629,
+      "band_hi": 0.3004,
+      "band_evidence": "band_optimize.json: OOD recall 0.980 持平下 skip_correct 0.741→0.862，带覆盖率 1.3%（corpus）"
+    }
+  },
+  "metrics": {
+    "base": "Qwen/Qwen3-1.7B",
+    "epochs": 2,
+    "lr": 0.0001,
+    "seed": 20260919,
+    "split": "shared-row 60/20/20 by route3",
+    "tasks": [
+      "binary",
+      "prelim"
+    ],
+    "training_mode": "rlcd",
+    "kl_weight": 1.0,
+    "ce_weight": 0.0,
+    "soft_coverage": 1.0,
+    "binary": {
+      "temp": 1.2945485061421278,
+      "test_acc": 0.9788617886178862,
+      "ece_raw": 0.014478783878853636,
+      "ece_cal": 0.012109191727832064,
+      "cascade": [
+        {
+          "coverage": 0.5,
+          "accuracy": 1.0,
+          "tau_at_edge": 0.9974942207336426
+        },
+        {
+          "coverage": 0.6,
+          "accuracy": 1.0,
+          "tau_at_edge": 0.995536208152771
+        },
+        {
+          "coverage": 0.7,
+          "accuracy": 1.0,
+          "tau_at_edge": 0.9920605421066284
+        },
+        {
+          "coverage": 0.8,
+          "accuracy": 0.9979674796747967,
+          "tau_at_edge": 0.9829676747322083
+        },
+        {
+          "coverage": 0.9,
+          "accuracy": 0.9909747292418772,
+          "tau_at_edge": 0.963840901851654
+        },
+        {
+          "coverage": 0.95,
+          "accuracy": 0.9863013698630136,
+          "tau_at_edge": 0.9248765110969543
+        },
+        {
+          "coverage": 1.0,
+          "accuracy": 0.9788617886178862,
+          "tau_at_edge": 0.5481298565864563
+        }
+      ]
+    },
+    "prelim": {
+      "temp": 1.193586983501221,
+      "test_acc": 0.8357723577235773,
+      "ece_raw": 0.051091063022613493,
+      "ece_cal": 0.03210605848126296,
+      "cascade": [
+        {
+          "coverage": 0.5,
+          "accuracy": 0.9642857142857143,
+          "tau_at_edge": 0.9250780940055847
+        },
+        {
+          "coverage": 0.6,
+          "accuracy": 0.959349593495935,
+          "tau_at_edge": 0.8681928515434265
+        },
+        {
+          "coverage": 0.7,
+          "accuracy": 0.9395348837209302,
+          "tau_at_edge": 0.8124743700027466
+        },
+        {
+          "coverage": 0.8,
+          "accuracy": 0.9146341463414634,
+          "tau_at_edge": 0.7402490973472595
+        },
+        {
+          "coverage": 0.9,
+          "accuracy": 0.8826714801444043,
+          "tau_at_edge": 0.6521170139312744
+        },
+        {
+          "coverage": 0.95,
+          "accuracy": 0.863013698630137,
+          "tau_at_edge": 0.5521726012229919
+        },
+        {
+          "coverage": 1.0,
+          "accuracy": 0.8357723577235773,
+          "tau_at_edge": 0.5
+        }
+      ],
+      "tau_retrieve": 0.30199605226516724,
+      "test_recall": 1.0,
+      "test_skip_correct": 0.6176470588235294
+    },
+    "ood": {
+      "binary": {
+        "ood_acc": 0.9444444444444444
+      },
+      "prelim": {
+        "ood_acc": 0.7962962962962963,
+        "ood_recall": 0.94,
+        "ood_skip_correct": 0.5862068965517241
+      }
+    },
+    "latency_ms_per_decision_gpu": 119.2
+  }
+}

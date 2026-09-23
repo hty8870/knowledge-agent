@@ -1,0 +1,5 @@
+# Optional, isolated dependency for scripts/telemetry_parquet.py.
+# Keep analytics tooling out of the application and telemetry receiver runtimes.
+# Development convenience file. Production/reproducible installs should use:
+# <python> -m pip install --require-hashes -r requirements-analytics.lock
+pyarrow==25.0.1

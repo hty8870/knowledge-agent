@@ -1,0 +1,32 @@
+# Human-maintained CI input. CI installs the generated requirements-ci.lock,
+# never this unconstrained source file directly.
+-r requirements.txt
+pytest>=9.1.1
+mcp==1.28.1
+# 验证 遥测批新增的 tests 需要 import sqlalchemy / langchain_core；
+# 版本钉住避免传递解析漂移，跟随 dependabot 组升级。
+sqlalchemy==2.0.52
+langchain-core==1.6.2
+# test_scoped_routing / test_artifact_context 硬 import langgraph（agent_exec._get_graph
+# 不做缺包跳过是刻意设计）；windows-primary-full 必须装。
+langgraph==1.2.11
+# langgraph-sdk 仍要 websockets<17（1.2.11 未放宽，uv 解析冲突实测），langsmith 要 >=15
+# ——钉 15.0.1 解除旧锁 websockets 16.1.1/17.0.1 双 marker 对 langgraph-sdk 的冲突；
+# dependabot 的 17.x 升级须等 langgraph-sdk 放宽后整体跟进。
+websockets==15.0.1
+# agent_exec 扩展探测同时要求 langgraph + langchain_openai（find_spec 双闸，
+# agent_exec.py:268）——少一个就 179 条 agent 测试整体 AgentUnavailable。
+langchain-openai==1.6.0
+# Security floor shared with the Web/runtime locks. 49.0.0 is affected by
+# CVE-2026-69247; keeping this direct prevents transitive resolver drift.
+cryptography==50.0.1
+# devcontext 纳入 CI pytest-suite 后其 dense 召回路径（retriever/index_store 的
+# 函数内 import numpy）需要 numpy；产品自身不直接 import。numpy 2.5.x 要求
+# Python>=3.12，devcontext 测试只在 full profile（CI=3.12）运行，min 3.10 job 不装。
+numpy==2.5.2; python_version >= '3.12'
+# Redis/MQ 批（2026-09-08）：test_redis_sessions / test_rq_jobs / test_webapp_job_backends
+# 硬 import redis/rq/fakeredis（可选后端的测试门）。版本跟随 requirements-mq.txt 下界钉死，
+# fakeredis 仅测试用（生产代码不 import）。
+redis==8.1.0
+rq==2.12.0
+fakeredis==2.37.1

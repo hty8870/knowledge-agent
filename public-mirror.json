@@ -1,0 +1,12 @@
+{
+  "file_count": 660,
+  "policy_sha256": "77a74782fda03b655fb094d7a28ea9b576c21565b1c80075d3804fea28fc7f2a",
+  "private_repository": "hty8870/biodata-agent-private",
+  "public_repository": "hty8870/knowledge-agent-skeleton",
+  "runtime_version": "3.0.0",
+  "schema_version": 2,
+  "source_dirty": false,
+  "source_private_commit": "ae029f0a9bba4dc7ea4777db03ec246e6702629c",
+  "transform_version": "3",
+  "tree_sha256": "499369284641781ddd7cfaaf01a164d2676244833e16ce69b31ce0794005c77b"
+}

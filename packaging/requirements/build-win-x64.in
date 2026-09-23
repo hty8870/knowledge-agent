@@ -1,0 +1,13 @@
+# -*- coding: utf-8 -*-
+# build-win-x64.in —— BioData Agent 冻结构建工具链（Windows x64，Python 3.12）
+# 安装器工程：PyInstaller + hooks-contrib 用于 onedir 打包。与 runtime-win-x64.lock
+# 一起安装进隔离构建 venv（C:\Users\<user>\Documents\Agent\build-venv）。
+#
+# 编译命令（产物 build-win-x64.lock，== 钉版 + SHA-256 hashes）：
+#   uv pip compile build-win-x64.in --generate-hashes --only-binary=:all: \
+#       --python-version 3.12 --python-platform windows -o build-win-x64.lock
+pyinstaller>=6.10
+pyinstaller-hooks-contrib>=2024.9
+# 安装版在线模型组件的单文件解析/安装器；spec 从 build-venv/Scripts/uv.exe 复制进
+# frozen tools/，主程序不 import uv。版本按 0.11 minor 钉住，锁文件再精确到 patch+hash。
+uv>=0.11.8,<0.12

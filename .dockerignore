@@ -1,0 +1,71 @@
+# BioData Agent 构建上下文瘦身（对照 .gitignore 思路，宁窄勿宽）。
+# 目的：① 防密钥/本机数据进镜像层（.env*、.userdata、models、本机笔记）；
+#       ② 减小发给 docker daemon 的上下文（.git、trace 运行产物、测试、文档）。
+# Dockerfile 只 COPY src/ web/ database/ scripts/run_web.py 使用教程三个文件
+# .agents/skills/biodata-dataset-discovery/ 与 deploy/web/requirements-web.lock，
+# 其余条目均为纵深防御（防未来有人改成 COPY . / .）。
+
+# --- 密钥与本机凭据：绝不进镜像 ---
+.env
+.env.*
+*.pem
+*.key
+
+# --- 版本控制与 CI ---
+.git
+.gitignore
+.github
+
+# --- Python 产物与环境 ---
+.venv
+venv
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+
+# --- 本机运行产物 / 大目录 ---
+models/
+.userdata/
+outputs/
+artifacts/
+run/
+runtime.json
+.biodata-setup-done
+logs/
+database/trace/
+database/external/upload_*.json
+langchain-master/
+
+# --- 本机验证残留 / 截图脚手架 ---
+_*_check/
+scripts/_*
+*-shots/
+.census/
+
+# --- 本机笔记与草稿（不进镜像层）---
+工作笔记/
+*汇报_*
+
+# --- 测试与文档（非运行必需）---
+tests/
+docs/
+eval/
+
+# 使用教程只放行运行时实际读取的三个文件（上传规范 / agent 接入提示词 / 在线接入提示词模板），
+# 其余为未发表材料，不进镜像层。
+使用教程/*
+!使用教程/数据集上传
+使用教程/数据集上传/*
+!使用教程/数据集上传/数据集上传规范.md
+!使用教程/MCP安装
+使用教程/MCP安装/*
+!使用教程/MCP安装/agent接入提示词.md
+!使用教程/MCP安装/在线接入提示词模板.md
+!.agents/skills/biodata-dataset-discovery/
+
+# --- 杂项 ---
+*.log
+.claude/
+backup_*/

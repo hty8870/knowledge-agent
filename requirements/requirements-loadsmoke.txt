@@ -1,0 +1,13 @@
+# 可选依赖：仅供 scripts/load_smoke.py（加载抽样冒烟）使用。
+# 主线运行时与 CI 都不需要——刻意独立于 requirements.txt / requirements-ci.txt，
+# 不要把 scanpy 加进那两份（依赖纪律：主线保持精简，冒烟是人工触发的可选验证）。
+#
+# scanpy.read_10x_h5 真正用到的最小传递依赖是 anndata / h5py / numpy / pandas / scipy，
+# pip 会按 scanpy 自身的版本约束自动解析；这里只精确 pin scanpy 本包保证可复现，
+# 其余列出下限仅作用途注明与兜底。安装：py -m pip install -r requirements-loadsmoke.txt
+scanpy==1.11.5
+anndata>=0.10
+h5py>=3.8
+numpy>=1.24
+pandas>=2.0
+scipy>=1.10

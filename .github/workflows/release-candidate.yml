@@ -1,0 +1,109 @@
+name: Release candidate
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+# This workflow produces a verified, downloadable release candidate. It does
+# not create a GitHub Release, access deployment credentials, or deploy a host.
+permissions: {}
+
+concurrency:
+  group: release-candidate-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTHONUTF8: "1"
+  PYTHONHASHSEED: "0"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  HF_HUB_OFFLINE: "1"
+  TRANSFORMERS_OFFLINE: "1"
+  BIODATA_ALLOW_MODEL_DOWNLOAD: "0"
+  BIODATA_CI_OFFLINE: "1"
+
+jobs:
+  verify-and-package:
+    name: verify and package
+    runs-on: windows-2025
+    timeout-minutes: 45
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the exact revision
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/requirements-ci.lock
+
+      - name: Install the reviewed hash-locked environment
+        run: >-
+          python -m pip install --require-hashes --only-binary=:all: -r requirements/requirements-ci.lock
+
+      - name: Run the full manifest-defined quality profile
+        run: >-
+          python scripts/quality_gate.py
+          --profile full
+          --report-json artifacts/quality-release.json
+
+      - name: Build and verify the version-matched allowlisted release candidate
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $BuildArgs = @('scripts\build_release.py', 'build', '--output-dir', 'artifacts')
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            if (-not $env:GITHUB_REF_NAME.StartsWith('v')) {
+              throw "Release tag must start with v: $env:GITHUB_REF_NAME"
+            }
+            $ExpectedVersion = $env:GITHUB_REF_NAME.Substring(1)
+            $BuildArgs += @('--expected-version', $ExpectedVersion)
+          }
+          python @BuildArgs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Re-verify the finished archive
+        run: >-
+          python scripts/build_release.py verify
+          --archive artifacts/biodata-agent-release-candidate.zip
+
+      - name: Smoke-test the unpacked artifact
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $Archive = Join-Path $PWD 'artifacts\biodata-agent-release-candidate.zip'
+          $Unpacked = Join-Path $env:RUNNER_TEMP ("biodata-agent-" + $env:GITHUB_RUN_ID)
+          if (Test-Path -LiteralPath $Unpacked) {
+            throw "Refusing to reuse extraction directory: $Unpacked"
+          }
+          Expand-Archive -LiteralPath $Archive -DestinationPath $Unpacked
+          Push-Location -LiteralPath $Unpacked
+          try {
+            python -B scripts\smoke_test.py
+            python -B scripts\web_smoke_test.py
+            python -B mcp_server.py --selfcheck
+          }
+          finally {
+            Pop-Location
+            Remove-Item -LiteralPath $Unpacked -Recurse -Force
+          }
+
+      - name: Upload only verified release evidence
+        if: success()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: biodata-agent-release-candidate-${{ github.run_id }}
+          path: |
+            artifacts/biodata-agent-release-candidate.zip
+            artifacts/biodata-agent-release-candidate.zip.sha256
+            artifacts/quality-release.json
+          if-no-files-found: error
+          retention-days: 30

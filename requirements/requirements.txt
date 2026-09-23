@@ -1,0 +1,11 @@
+# Minimal runtime dependencies for the BioData Agent web UI and CLI.
+# The MCP server and local semantic reranking are NOT covered here:
+# see 使用教程/MCP安装/MCP_安装教程.md and requirements-embeddings.txt.
+python-dotenv>=1.2.3
+fastapi>=0.141.1
+uvicorn>=0.52.4
+python-multipart>=0.0.32
+httpx>=0.28.1
+# rerank 处方层 repair 术式的拼音整词纠错（agent_exec `_repair_route` 拼音索引）；
+# 纯 Python 无传递依赖，web/MCP/CLI 运行面共用。
+pypinyin>=0.55.0

@@ -1,0 +1,220 @@
+{
+  "schema_version": 1,
+  "default_profile": "fast",
+  "execution_policy": {
+    "offline_after_dependency_install": true,
+    "network": "forbidden",
+    "network_enforcement": "reviewed command allowlist plus best-effort dead-proxy and offline environment; this is not an operating-system egress sandbox",
+    "secrets": "forbidden-and-sanitized",
+    "model_downloads": "forbidden",
+    "environment_injection": "known Python, pytest, coverage, Node preload, and upper/lower-case proxy variables are removed before reviewed replacements are set",
+    "fallback": "fail-closed; a missing required tool or timed-out command fails the gate",
+    "dependency_install_note": "Dependency resolution is outside this runner. CI installs the reviewed hash-locked requirements-ci.lock before invoking a profile."
+  },
+  "tools": {
+    "python": {
+      "environment_override": "BIODATA_PYTHON",
+      "candidates": ["python3", "python", "py"]
+    },
+    "node": {
+      "environment_override": "BIODATA_NODE",
+      "candidates": ["node", "node.exe"]
+    },
+    "powershell": {
+      "environment_override": "BIODATA_POWERSHELL",
+      "candidates": ["pwsh", "powershell.exe", "powershell"]
+    }
+  },
+  "profiles": {
+    "fast": {
+      "description": "Portable, deterministic contract checks for every supported CI platform.",
+      "gates": [
+        "python-compile",
+        "javascript-syntax",
+        "automation-contracts"
+      ]
+    },
+    "full": {
+      "description": "Authoritative offline project verification on the primary Windows/Python environment.",
+      "gates": [
+        "python-compile",
+        "javascript-syntax",
+        "automation-contracts",
+        "dependency-consistency",
+        "pytest-suite",
+        "project-smoke",
+        "web-smoke",
+        "mcp-protocol-selfcheck",
+        "frozen-recommendation-evaluation",
+        "dev-recommendation-evaluation",
+        "installer-contracts"
+      ]
+    }
+  },
+  "gates": [
+    {
+      "id": "python-compile",
+      "description": "Compile Python entry points and source modules to syntax trees without imports, bytecode files, or service calls.",
+      "commands": [
+        ["{python}", "-c", "import ast; from pathlib import Path; files=[*Path('src').rglob('*.py'), *Path('scripts').glob('*.py')]; [compile(p.read_text(encoding='utf-8-sig'), str(p), 'exec', flags=ast.PyCF_ONLY_AST, dont_inherit=True) for p in files]"]
+      ],
+      "required_tools": ["python"],
+      "timeout_seconds": 120,
+      "offline": true,
+      "network": "forbidden",
+      "secrets": "forbidden",
+      "model_downloads": "forbidden",
+      "fallback": {"missing_tool": "fail", "timeout": "fail", "command_failure": "fail"}
+    },
+    {
+      "id": "javascript-syntax",
+      "description": "Ask Node.js to parse every first-party browser module; bundled vendor files are intentionally excluded.",
+      "commands": [
+        ["{node}", "--check", "{file}"]
+      ],
+      "foreach_glob": "web/static/js/*/*.js",
+      "required_tools": ["node"],
+      "timeout_seconds": 30,
+      "offline": true,
+      "network": "forbidden",
+      "secrets": "forbidden",
+      "model_downloads": "forbidden",
+      "fallback": {"missing_tool": "fail", "timeout": "fail", "command_failure": "fail"}
+    },
+    {
+      "id": "automation-contracts",
+      "description": "Lock the manifest runner, workflow security posture, pinned actions, and dependency-lock contract.",
+      "commands": [
+        ["{python}", "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/test_quality_gate.py", "tests/test_ci_contract.py", "tests/test_deploy_security_contract.py", "tests/test_metadata_distribution_contract.py", "tests/test_public_mirror_builder.py", "tests/test_public_mirror_contract.py", "tests/test_release_workflow_contract.py", "tests/test_release_builder.py", "tests/test_project_skill.py", "tests/test_release_version_contract.py", "tests/test_wave3_consolidation.py"]
+      ],
+      "required_tools": ["python"],
+      "timeout_seconds": 120,
+      "offline": true,
+      "network": "forbidden",
+      "secrets": "forbidden",
+      "model_downloads": "forbidden",
+      "fallback": {"missing_tool": "fail", "timeout": "fail", "command_failure": "fail"}
+    },
+    {
+      "id": "dependency-consistency",
+      "description": "Verify the already-installed environment has no broken or conflicting distributions.",
+      "commands": [
+        ["{python}", "-m", "pip", "check"]
+      ],
+      "required_tools": ["python"],
+      "timeout_seconds": 120,
+      "offline": true,
+      "network": "forbidden",
+      "secrets": "forbidden",
+      "model_downloads": "forbidden",
+      "fallback": {"missing_tool": "fail", "timeout": "fail", "command_failure": "fail"}
+    },
+    {
+      "id": "pytest-suite",
+      "description": "Run the complete Python regression suite in the repository.",
+      "commands": [
+        ["{python}", "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests"]
+      ],
+      "required_tools": ["python"],
+      "timeout_seconds": 900,
+      "offline": true,
+      "network": "forbidden",
+      "secrets": "forbidden",
+      "model_downloads": "forbidden",
+      "fallback": {"missing_tool": "fail", "timeout": "fail", "command_failure": "fail"}
+    },
+    {
+      "id": "project-smoke",
+      "description": "Exercise the deterministic project smoke harness against the checked-in corpus.",
+      "commands": [
+        ["{python}", "scripts/smoke_test.py"]
+      ],
+      "required_tools": ["python"],
+      "timeout_seconds": 300,
+      "offline": true,
+      "network": "forbidden",
+      "secrets": "forbidden",
+      "model_downloads": "forbidden",
+      "fallback": {"missing_tool": "fail", "timeout": "fail", "command_failure": "fail"}
+    },
+    {
+      "id": "web-smoke",
+      "description": "Verify the FastAPI surface and all split frontend assets without starting a public server.",
+      "commands": [
+        ["{python}", "scripts/web_smoke_test.py"]
+      ],
+      "required_tools": ["python"],
+      "timeout_seconds": 300,
+      "offline": true,
+      "network": "forbidden",
+      "secrets": "forbidden",
+      "model_downloads": "forbidden",
+      "fallback": {"missing_tool": "fail", "timeout": "fail", "command_failure": "fail"}
+    },
+    {
+      "id": "mcp-protocol-selfcheck",
+      "description": "Spawn the real stdio MCP server and verify protocol initialization and tool discovery without an LLM call.",
+      "commands": [
+        ["{python}", "src/dataset_recommender/app/mcp_server.py", "--selfcheck"]
+      ],
+      "required_tools": ["python"],
+      "timeout_seconds": 180,
+      "offline": true,
+      "network": "forbidden",
+      "secrets": "forbidden",
+      "model_downloads": "forbidden",
+      "fallback": {"missing_tool": "fail", "timeout": "fail", "command_failure": "fail"}
+    },
+    {
+      "id": "frozen-recommendation-evaluation",
+      "description": "Enforce the frozen recommendation baseline, hard constraints, and FASTQ exclusion contract.",
+      "commands": [
+        ["{python}", "scripts/evaluate_recommendation.py"]
+      ],
+      "required_tools": ["python"],
+      "timeout_seconds": 600,
+      "offline": true,
+      "network": "forbidden",
+      "secrets": "forbidden",
+      "model_downloads": "forbidden",
+      "fallback": {"missing_tool": "fail", "timeout": "fail", "command_failure": "fail"}
+    },
+    {
+      "id": "dev-recommendation-evaluation",
+      "description": "Dev-set regression gate: run the dev query set (eval/eval_queries_dev.json, 55 cases covering negation-suffix / disjunction / fastq-colloquial / V(D)J / non-human-model-organism / subtype phenomena). Thresholds = post-fix measurement (Top1/Top5 100.0) floated down slightly to 99.5 — with 50 scored cases a single miss reads 98.0 and goes red; violation/FASTQ pinned at 0.0, NoResult at 5/5. Unlike the held-out watchdog this set MAY be iterated against, so the gate locks the achieved level, not a first-run baseline.",
+      "commands": [
+        ["{python}", "scripts/evaluate_recommendation.py", "--queries", "eval/eval_queries_dev.json", "--expect-top1", "99.5", "--expect-top5", "99.5", "--expect-max-violation", "0.0", "--expect-max-fastq-violation", "0.0", "--expect-min-noresult", "1.0"]
+      ],
+      "required_tools": ["python"],
+      "timeout_seconds": 600,
+      "offline": true,
+      "network": "forbidden",
+      "secrets": "forbidden",
+      "model_downloads": "forbidden",
+      "fallback": {"missing_tool": "fail", "timeout": "fail", "command_failure": "fail"}
+    },
+    {
+      "id": "installer-contracts",
+      "description": "Installer pipeline contract tests: installer contract (tests/test_installer_contract.py), frozen runtime contract (tests/test_frozen_runtime_contract.py), migration and end-to-end contracts (tests/test_migrate_from.py, tests/test_installer_e2e.py). Files are referenced by name; any not yet present are skipped with a printed note, but when none exist the gate fails closed so the installer surface can never be silently unguarded. Also covered by the pytest-suite gate; this gate makes the installer contract matrix explicit and self-contained.",
+      "commands": [
+        ["{python}", "-c", "import pathlib, sys, pytest\ndeclared = ['tests/test_installer_contract.py', 'tests/test_frozen_runtime_contract.py', 'tests/test_migrate_from.py', 'tests/test_installer_e2e.py']\npresent = [p for p in declared if pathlib.Path(p).is_file()]\nmissing = [p for p in declared if p not in present]\nif missing:\n    print('installer-contracts: in-flight files referenced by name, skipped: ' + ', '.join(missing))\nsys.exit(pytest.main(['-q', '-p', 'no:cacheprovider'] + present))"]
+      ],
+      "triggers": [
+        "packaging/**",
+        "src/dataset_recommender/app/desktop_launcher*.py",
+        "src/dataset_recommender/app/runtime_paths.py",
+        "tests/test_installer_contract.py",
+        "tests/test_frozen_runtime_contract.py",
+        "tests/test_migrate_from.py",
+        "tests/test_installer_e2e.py"
+      ],
+      "required_tools": ["python"],
+      "timeout_seconds": 300,
+      "offline": true,
+      "network": "forbidden",
+      "secrets": "forbidden",
+      "model_downloads": "forbidden",
+      "fallback": {"missing_tool": "fail", "timeout": "fail", "command_failure": "fail"}
+    }
+  ]
+}

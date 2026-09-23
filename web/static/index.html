@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 构建标记：反馈强化版=benchfb。采集默认态/教程文案以此为唯一显式判据
+     （usage_log.isBenchfbBuild），不再靠按钮 DOM 存废探测。主线版手术须连同此 meta 一起剥除。 -->
+<meta name="biodata-build" content="benchfb">
+<!-- Telemetry configuration is supplied by the operator. Keep this page and dataset.html aligned; usage_upload.js validates the configured endpoint and transport policy before upload. -->
+<meta name="biodata-telemetry-endpoint" content="http://<server-ip>:8471/v1/ingest">
+<meta name="biodata-telemetry-token" content="<your-ingest-token>">
+<meta name="biodata-telemetry-allow-insecure" content="<server-ip>">
+<!-- 可选实验合同：只有 id/arm/propensity 三件齐全且 propensity∈(0,1] 才入包；空值=非实验流量。 -->
+<meta name="biodata-prompt-version" content="">
+<meta name="biodata-experiment-id" content="">
+<meta name="biodata-experiment-arm" content="">
+<meta name="biodata-experiment-propensity" content="">
+<!-- 可选单包多臂：arm|weight|strategy|rerank|recall;...；权重须合计 1，空值=禁用。 -->
+<meta name="biodata-experiment-arms" content="">
+<title>BioData Agent · 生物数据集检索</title>
+<link rel="stylesheet" href="/static/css/app.css?v=20260923-domainpack2">
+<link rel="icon" href="/favicon.ico" type="image/svg+xml">
+<!-- C4（2026-08-03 Phase）：C1 九文件（core/usage_core/usage_log/board_core/memory_rank/dream_core/
+     act_core/memory/accounts）+ C2 五文件（cards/shell/results/facets/progress）+ C3 七文件
+     （search/browse/reuse_pack/fav_folders/interactions/onboarding/dataset_page）+ dream（试点）
+     + 本批四文件（board/task_pack/act/boot）+ examples（2026-08-13 操作样例库）——全部 28 个一方 JS
+     均为 ES Module（本页 script 标签加载 27 个，dataset_page.js 只由 /dataset 详情页加载），boot 是唯一入口。
+     importmap 必须在任何 module script 之前；令牌与 script 标签同代。
+     （意见反馈对话框）：#feedback_dialog_core/#feedback 两键**只在本页与 package.json**
+     登记、不经任何 `#` import 使用（feedback.js 相对 import 纯逻辑核、动态 import usage_upload——与
+     usage_upload/feedback_core「不进静态图」同哲学，见 usage_log.js 头部）；dataset.html 归 F2 并行包
+     不碰，parity 门只查**被使用**的 specifier，故本包不红；后续收口时如需补齐 dataset.html 键即可。 -->
+<script type="importmap">
+{"imports": {
+    "#core": "/static/js/core/core.js?v=20260923-domainpack2",
+    "#usage_core": "/static/js/core/usage_core.js?v=20260923-domainpack2",
+    "#usage_log": "/static/js/core/usage_log.js?v=20260923-domainpack2",
+    "#benchfb_core": "/static/js/core/benchfb_core.js?v=20260923-domainpack2",
+    "#benchfb": "/static/js/core/benchfb.js?v=20260923-domainpack2",
+    "#board_core": "/static/js/panel/board_core.js?v=20260923-domainpack2",
+    "#memory_rank": "/static/js/panel/memory_rank.js?v=20260923-domainpack2",
+    "#dream_core": "/static/js/panel/dream_core.js?v=20260923-domainpack2",
+    "#act_core": "/static/js/act/act_core.js?v=20260923-domainpack2",
+    "#downloads": "/static/js/core/downloads.js?v=20260923-domainpack2",
+    "#memory": "/static/js/panel/memory.js?v=20260923-domainpack2",
+    "#examples": "/static/js/panel/examples.js?v=20260923-domainpack2",
+    "#accounts": "/static/js/panel/accounts.js?v=20260923-domainpack2",
+    "#cards": "/static/js/search/cards.js?v=20260923-domainpack2",
+    "#shell": "/static/js/core/shell.js?v=20260923-domainpack2",
+    "#results": "/static/js/search/results.js?v=20260923-domainpack2",
+    "#facets": "/static/js/search/facets.js?v=20260923-domainpack2",
+    "#progress": "/static/js/core/progress.js?v=20260923-domainpack2",
+    "#search": "/static/js/search/search.js?v=20260923-domainpack2",
+    "#browse": "/static/js/search/browse.js?v=20260923-domainpack2",
+    "#reuse_pack": "/static/js/act/reuse_pack.js?v=20260923-domainpack2",
+    "#fav_folders": "/static/js/panel/fav_folders.js?v=20260923-domainpack2",
+    "#interactions": "/static/js/core/interactions.js?v=20260923-domainpack2",
+    "#onboarding": "/static/js/core/onboarding.js?v=20260923-domainpack2",
+    "#dataset_page": "/static/js/search/dataset_page.js?v=20260923-domainpack2",
+    "#sync_button_core": "/static/js/search/sync_button_core.js?v=20260923-domainpack2",
+    "#sync_button": "/static/js/search/sync_button.js?v=20260923-domainpack2",
+    "#board": "/static/js/panel/board.js?v=20260923-domainpack2",
+    "#task_pack": "/static/js/act/task_pack.js?v=20260923-domainpack2",
+    "#act": "/static/js/act/act.js?v=20260923-domainpack2",
+    "#act_run": "/static/js/act/act_run.js?v=20260923-domainpack2",
+    "#dream": "/static/js/panel/dream.js?v=20260923-domainpack2",
+    "#artifacts": "/static/js/core/artifacts.js?v=20260923-domainpack2",
+    "#projects_core": "/static/js/core/projects_core.js?v=20260923-domainpack2",
+    "#projects": "/static/js/core/projects.js?v=20260923-domainpack2",
+    "#feedback_dialog_core": "/static/js/core/feedback_dialog_core.js?v=20260923-domainpack2",
+    "#feedback": "/static/js/core/feedback.js?v=20260923-domainpack2",
+    "#ladder_core": "/static/js/search/ladder_core.js?v=20260923-domainpack2",
+    "#ladder": "/static/js/search/ladder.js?v=20260923-domainpack2",
+    "#task_card": "/static/js/search/task_card.js?v=20260923-domainpack2",
+    "#project_updates_core": "/static/js/core/project_updates_core.js?v=20260923-domainpack2",
+    "#project_updates": "/static/js/core/project_updates.js?v=20260923-domainpack2",
+    "#project_exports_core": "/static/js/core/project_exports_core.js?v=20260923-domainpack2",
+    "#project_exports": "/static/js/panel/project_exports.js?v=20260923-domainpack2",
+    "#batch_select": "/static/js/core/batch_select.js?v=20260923-domainpack2",
+    "#flow_trace": "/static/js/core/flow_trace.js?v=20260923-domainpack2",
+    "#boot": "/static/js/core/boot.js?v=20260923-domainpack2"
+}}
+</script>
+
+  <!-- 部署注入页脚（备案合规）：样式仅此一处，内容占位符由服务端运行时经
+       BIODATA_SITE_FOOTER_HTML 原样替换；未配置时页脚为空、零占位不可见。
+       真实备案号属部署侧信息，永不进 git（与遥测 meta 同一注入机制）。 -->
+  <style>
+    .deploy-footer{margin:32px auto 16px;padding:0 16px;text-align:center;font-size:12px;line-height:1.8;color:#9aa0a8}
+    .deploy-footer a{color:inherit;text-decoration:none}
+    .deploy-footer a:hover{text-decoration:underline}
+    .deploy-footer img{vertical-align:-3px;width:14px;height:14px;margin-right:4px}
+    .deploy-footer:empty{display:none}
+  </style>
+</head>
+<body>
+<!-- ============ 左侧悬浮 tab 栏 ============ -->
+<aside class="sidebar" id="sidebar">
+    <div class="side-card side-nav-card" id="sideNavCard"><!-- 导航卡（常驻）；有分面时向上收缩到内容高 -->
+    <div class="side-head">
+        <span class="wordmark" aria-label="BioData Agent"><span class="wm-bio" aria-hidden="true">Bi<svg class="wm-o" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="7.2" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M11 4.2 C5.6 8.2 16.4 13.8 11 17.8" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".62"/></svg></span><span aria-hidden="true">Data&nbsp;Agent</span></span>
+        <button class="side-toggle" id="sideCollapse" title="收起侧栏" aria-label="收起侧栏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16"/></svg></button>
+    </div>
+    <nav class="side-nav" id="nav">
+        <button class="nav-item active" data-view="query" title="在查询页再点一次，会在新标签页另开一段新对话（本页对话保留）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span class="lbl">智能查询</span></button>
+        <button class="nav-item" data-view="browse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="lbl">数据集浏览</span></button>
+        <!-- 我的库（追踪 + 收藏双页签浮窗）与历史记录（独立浮窗）都是浮窗不是视图
+             data-view="lib"/"history" 只作早退识别——showView 永不收到它们（与旧 history 同规），
+             interactions.js 拦下后调对应浮窗开关。 -->
+        <button class="nav-item" id="libNav" data-view="lib" title="我的库：追踪的检索与收藏的数据集"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2-2h4l2 3h6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg><span class="lbl">我的库</span></button>
+        <button class="nav-item" id="histNav" data-view="history" title="历史记录：最近 50 次检索，只存在本地"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.2 2"/></svg><span class="lbl">历史记录</span></button>
+        <button class="nav-item" data-view="help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.3 2.4c-.7.3-1.4.9-1.4 1.9v.3"/><path d="M12 17h.01"/></svg><span class="lbl">帮助</span></button>
+        <button class="nav-item" id="settingsBtn" title="设置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 0 1-4 0v-.1A1.6 1.6 0 0 0 8 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 1.1-2.7H2a2 2 0 0 1 0-4h.1A1.6 1.6 0 0 0 3.4 8a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 8 3.4h.1A1.6 1.6 0 0 0 9 2.1V2a2 2 0 0 1 4 0v.1A1.6 1.6 0 0 0 16 3.4a1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8v.1a1.6 1.6 0 0 0 1.5 1H22a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg><span class="lbl">设置</span></button>
+    </nav>
+    </div><!-- /.side-nav-card -->
+    <!-- 工作卡：同一张卡承载「细化筛选」与「继续对话」，顶部开关切换（2026-07-23；2026-08-02 页签更名）。
+         两块都是「拿到结果之后接着往下做」的动作，此前一个在左侧栏、一个在结果区上方，
+         用户要在两个地方找。合成一张卡后位置固定，只用一个开关决定看哪一块。
+         注意：#sideFacets / #condBoard 及其内部所有 id 一律保持不变——facets.js 的
+         syncFacetsCard/placeFacetBar 与 board.js 全按 id 取节点，改 id 会静默失联。 -->
+    <div class="side-card side-work" id="sideWork" role="group" hidden aria-label="结果操作">
+        <div class="sw-switch" role="tablist" aria-label="侧栏工作模式">
+            <span class="sw-glide" id="swGlide" aria-hidden="true"></span>
+            <button type="button" class="sw-tab is-on" id="swTabFacets" role="tab" aria-selected="true" aria-controls="sideFacets" data-sw-mode="facets">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 5h17l-6.6 7.6V19l-3.8-2.1v-4.3z"/></svg><span>细化筛选</span>
+            </button>
+            <button type="button" class="sw-tab" id="swTabBoard" role="tab" aria-selected="false" aria-controls="sideBoardPane" data-sw-mode="board">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-3.2-6.4"/><path d="M4 20l1.2-3.4"/><path d="M9 11h6M9 14.5h4"/></svg><span>继续对话</span>
+            </button>
+            <!-- 视图交换钮（2026-08-16 vs1）：交换主区结果网格与侧栏对话窗的显示位置——
+                 对话放大到主区 #chatStage，结果以紧凑卡收进本卡。board.js placeChatSuite 统一搬家；
+                 无结果/移动端/收起侧栏时自动退化为现状（本卡被 hidden 时本钮自然不可见）。 -->
+            <button type="button" class="sw-swap" id="swSwapBtn" aria-pressed="false"
+                    title="把对话放大到主区，结果收进侧栏" aria-label="交换主区与侧栏的显示位置">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4 3.5 7.5 7 11"/><path d="M3.5 7.5H17"/><path d="m17 13 3.5 3.5L17 20"/><path d="M20.5 16.5H7"/></svg>
+            </button>
+        </div>
+        <!-- 常驻「查询条件」栏：**就是** facets 的 #facetActive（用户圈的那一栏），board.js placeHitsBar 把它从
+             #facetBar 整块搬到这里——两模式都在、不随切换消失，**不另造栏**。侧栏收起/移动端搬回 #facetBar（结果区）。 -->
+        <div class="sw-hits" id="swHits" role="group" hidden aria-label="当前查询条件"></div>
+        <!-- `side-facets` 这个类**必须保留**：app.css 里整套侧栏分面样式（全宽行 / 计数右对齐 /
+             长值省略号，约 20 条规则）都以 `.side-facets` 作用域选择，去掉就整块回退成基础 chip 云。 -->
+        <div class="sw-pane side-facets" id="sideFacets" role="tabpanel" aria-labelledby="swTabFacets" aria-label="分面细化筛选">
+            <div class="side-facet-body" id="sideFacetBody"></div>
+        </div>
+        <!-- 对话记录面板（telegram / 微信式）：上＝常驻查询条件栏（#swHits，与细化筛选共享）；
+             中＝对话记录 + 条件板（#sideBoardScroll，主区、可滚）＋撤销/重做步进条；
+             面板外下方＝统一输入条（#chatComposer：范围 chip + 合并弹层 + 输入框 + 发送键）。
+             2026-08-02：唯一的「继续说」输入行挪到本卡最下方（微信式、发送即清空、默认为空），
+             主区结果态不再有输入框。#cbHistory 的归宿（p10 起，board.js cbChatInMain/placeChatLog
+             单一真源）：**有检索结果**时就是这里（#sideBoardScroll）；**无结果但有对话**时
+             住主区 hero 内的 #chatMain（Codex 式中央列，此时本卡整卡收起）。 -->
+        <div class="sw-pane" id="sideBoardPane" role="tabpanel" aria-labelledby="swTabBoard" hidden>
+            <div class="sw-board-scroll" id="sideBoardScroll" tabindex="0" role="group" aria-label="对话与细化记录（可上下滚动）"><!-- 对话记录（统一对话窗口的对话流，board.js cbRenderHistory）：本轮说过的话 + 系统回音 +
+                 做过的细化 + 执行行动流/总结（p10），按发生顺序；每条可「查看历史回复 / 分支 / 回退」。
+                 **有检索结果时静态家就是这里**；无结果有对话时由 placeChatLog 搬去 #chatMain（主区）。
+                 纯内存 _cbLog，随新检索清空、绝不落盘。 -->
+                <div class="cb-history" id="cbHistory" role="log" aria-live="polite" hidden aria-label="对话与细化记录"></div>
+            </div>
+        </div>
+        <!-- 统一输入条（图7 重做 2026-08-03 点5 改版；点6/7 分支条）：一条圆角容器 = 输入框 + 范围圆钮 + 发送键。
+             「范围」圆钮（与发送键同形的 34px 圆钮；两项都在智能识别时整体染 accent 色作开启标识）点开合并弹层
+             #scopePop——弹层内模式/chips/年份下拉恒可见可改（当前生效范围由控件状态本身呈现）。
+             #sourceFilter/#timeFilter 两节点由 board.js placeScopeControls 零复制搬入其中
+             （沿用「不另造控件」原则；hero 态它们留在主检索框 #consoleBar）。
+             发送即清空，默认为空；纸飞机 = 发送；发送中按钮就地滚百分比（与主检索键同款进度）。
+             点6/7：查看历史回复时（游标不在栈顶），输入条整根隐藏、换成 #cbForkBar 三键——
+             「回到最新」（回栈顶）/「从这里建立分支」（以该帧为起点**新开浏览器标签页**，本标签页不变）/
+             「回退至此」（剪掉该帧之后的对话与作用，不可撤销；二段确认）。 -->
+        <div class="cb-composer" id="chatComposer">
+            <!-- 2026-08-05 用户点图：弹层重排为「右坞双圆钮 + 单面板」——数据来源/发表时间两枚圆钮
+                 竖排在右，点谁显示谁的选项；自动识别态只留模式键与一行说明（chips/年份框只在自定义态出现）。 -->
+            <div class="scope-pop" id="scopePop" hidden role="dialog" aria-label="检索范围">
+                <div class="scope-panels" id="scopePanels"></div>
+                <div class="scope-dock" role="tablist" aria-label="筛选维度">
+                    <button type="button" class="scope-dock-btn is-on" id="scopeDockSrc" data-pane="source" role="tab" aria-selected="true" title="数据来源">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="7.5" ry="3"/><path d="M4.5 5.5v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-6"/><path d="M4.5 11.5v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-6"/></svg>
+                    </button>
+                    <button type="button" class="scope-dock-btn" id="scopeDockTime" data-pane="time" role="tab" aria-selected="false" title="发表时间">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="cb-fork" id="cbForkBar" hidden>
+                <button type="button" class="btn cb-fork-top" id="cbTopBtn"
+                        title="放弃查看历史，回到最新一次检索结果">回到最新</button>
+                <button type="button" class="btn cb-fork-branch" id="cbBranchBtn"
+                        title="以当前这条回复为起点，在新标签页里继续另一段对话；本标签页不变">从这里建立分支</button>
+                <button type="button" class="btn cb-fork-revert" id="cbRevertBtn"
+                        title="舍弃这条回复之后的全部对话与改动，不可恢复">回退至此</button>
+            </div>
+            <div class="cb-bar">
+                <!-- 上下文 chip 挂点（课题→追踪 / 数据集上下文；侧栏窄框态缩成对齐第一行
+                     左侧的小圆徽章 .ctx-dot，hover/点击浮出 popover 看详情）。
+                     projects.js / fav_folders.js 经中性属主渲染：注入内容预览 + 移除按钮 +
+                     隐私口径（远端模型明示「会发往你配置的 AI 服务商」，本地模型「不出本机」）。
+                     发送即清（chip 随消息发出去即消失）；发送时经 board.js 把内容附进请求体独立字段
+                     artifact_context。 -->
+                <div class="artifact-ctx" id="artifactCtx" hidden role="status" aria-label="上下文 chip"></div>
+                <textarea id="chatInput" rows="1" maxlength="500" data-agrow-max="6" placeholder="继续说…" title="改条件、重新检索、打包数据，都从这里说" aria-label="继续对话"></textarea>
+                <button type="button" class="scope-btn" id="scopeChip" aria-haspopup="true" aria-expanded="false" aria-controls="scopePop" title="检索范围（数据来源 / 发表时间）">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 5h17l-6.6 7.6V19l-3.8-2.1v-4.3z"/></svg>
+                </button>
+                <button type="button" class="cb-send" id="chatSendBtn" aria-label="发送" title="发送">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="side-resizer" id="sideResizer" role="separator" aria-label="调整侧边栏宽度" aria-orientation="vertical" aria-valuemin="240" aria-valuemax="420" aria-valuenow="300" tabindex="0" title="拖动调整侧边栏宽度；方向键微调">
+        <span aria-hidden="true"></span>
+    </div>
+</aside>
+<!-- 收起后：左上角悬浮 logo（点击展开侧栏） -->
+<button class="side-fab" id="sideFab" title="展开侧栏" aria-label="展开侧栏">
+    <span class="wordmark" aria-hidden="true"><span class="wm-bio">Bi<svg class="wm-o" viewBox="0 0 22 22"><circle cx="11" cy="11" r="7.2" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M11 4.2 C5.6 8.2 16.4 13.8 11 17.8" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".62"/></svg></span><span>Data&nbsp;Agent</span></span>
+</button>
+<div class="side-backdrop" id="sideBackdrop"></div>
+
+<main class="main">
+    <!-- ============ 智能查询 ============ -->
+    <section class="view active" data-view="query">
+        <div class="hero">
+            <div class="hero-rot" id="heroRot">
+                <h1 class="hero-slide is-on" id="heroGreeting">你好呀，今天想做点什么</h1>
+                <p class="hero-slide hero-slide-sub" aria-hidden="true">对话式检索数据、初步分析数据、下载数据、维护数据库——数据的事，一句话交代即可</p>
+                <p class="hero-slide hero-slide-sub" aria-hidden="true">每条推荐都说明理由，也可直接粘贴数据集编号或 DOI 直达。</p>
+            </div>
+            <div class="console">
+                <div class="console-main">
+                    <!-- 主输入框的上下文 chip 挂点（完整胶囊 .ctx-chip 绝对定位叠在输入框
+                         第一行左侧、与首行文本同一中线；textarea 首行 text-indent 由 projects.js
+                         按 chip 实测宽度同步，文本从 chip 右侧起排。与侧栏 #artifactCtx 同一状态真源，
+                         两处同时渲染、发送即同清。） -->
+                    <div class="artifact-ctx artifact-ctx-main" id="artifactCtxMain" hidden role="status" aria-label="上下文 chip"></div>
+                    <textarea id="queryInput" rows="1" maxlength="500" data-agrow-max="6" placeholder="例如：推荐有 FASTQ 的人类乳腺癌数据" aria-label="检索需求"></textarea>
+                </div>
+                <!-- 2026-08-30 首页输入框统一为 pill 款（与侧栏 #chatComposer 同族）——
+                     圆角长条 = 输入框 + 范围圆钮 + 圆形发送键。来源/时间两枚筛选的静态家
+                     （#consoleBar）收进下方弹层 #heroScopePop，点范围圆钮展开；
+                     出结果/对话态两枚筛选照旧由 board.js placeScopeControls 零复制搬去侧栏 #scopePop。 -->
+                <button type="button" class="scope-btn console-scope-btn" id="heroScopeBtn" aria-haspopup="true" aria-expanded="false" aria-controls="heroScopePop" title="检索范围（数据来源 / 发表时间）">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 5h17l-6.6 7.6V19l-3.8-2.1v-4.3z"/></svg>
+                </button>
+                <button class="btn btn-primary console-send" id="submitBtn" aria-label="发送" title="发送"><span class="sb-label" id="submitLabel"><svg class="sb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg><span class="sb-txt">发送</span></span></button>
+                <div class="scope-pop console-scope-pop" id="heroScopePop" hidden role="dialog" aria-label="检索范围">
+                    <div class="console-bar" id="consoleBar">
+                        <div class="cbar-cell" id="sourceFilter" aria-label="选择在哪些数据来源中检索">
+                            <span class="cbar-label">数据来源</span>
+                            <div class="sf-select">
+                                <button type="button" class="sf-toggle" id="srcToggle" aria-haspopup="true" aria-expanded="false" aria-controls="srcPanel">
+                                    <span class="sf-dot" aria-hidden="true"></span>
+                                    <span class="sf-cur" id="srcSummary">自动识别</span>
+                                    <span class="sf-caret" aria-hidden="true"></span>
+                                </button>
+                                <div class="sf-panel mode-auto" id="srcPanel" hidden>
+                                    <div class="sf-modes" role="group" aria-label="数据来源模式">
+                                        <button type="button" class="sf-mode active" data-mode="auto" aria-pressed="true">自动识别</button>
+                                        <button type="button" class="sf-mode" data-mode="custom" aria-pressed="false">自定义</button>
+                                    </div>
+                                    <p class="sf-hint" id="srcHint">根据你的描述自动匹配相关来源，无需手动挑选。</p>
+                                    <span class="sf-chips" id="sourceChips"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="cbar-div" id="cbarDiv" aria-hidden="true"></div>
+                        <div class="cbar-cell" id="timeFilter">
+                            <span class="cbar-label">发表时间</span>
+                            <div class="sf-select">
+                                <button type="button" class="sf-toggle" id="timeToggle" aria-haspopup="true" aria-expanded="false" aria-controls="timePanel">
+                                    <span class="sf-dot" aria-hidden="true"></span>
+                                    <span class="sf-cur" id="timeSummary">自动识别</span>
+                                    <span class="sf-caret" aria-hidden="true"></span>
+                                </button>
+                                <div class="sf-panel mode-auto" id="timePanel" hidden>
+                                    <div class="sf-modes" role="group" aria-label="发表时间模式">
+                                        <button type="button" class="sf-mode active" data-mode="auto" aria-pressed="true">自动识别</button>
+                                        <button type="button" class="sf-mode" data-mode="custom" aria-pressed="false">自定义</button>
+                                    </div>
+                                    <p class="sf-hint" id="timeHint">从你的描述里自动识别时间范围（如「2020 年以来」「近三年」）；没提到就不限。</p>
+                                    <div class="tf-range">
+                                        <input id="dateFrom" class="tf-select" list="yearChoices" inputmode="numeric" autocomplete="off" placeholder="不限" aria-label="起始年份">
+                                        <span class="tf-sep">至</span>
+                                        <input id="dateTo" class="tf-select" list="yearChoices" inputmode="numeric" autocomplete="off" placeholder="不限" aria-label="截止年份">
+                                        <datalist id="yearChoices"></datalist>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 条件板：出结果后列出系统实际在用的每一条筛选条件，可点可改，也可以直接说一句话改。
+                 注意：结果态隐藏 hero 内容的规则是逐个选择器写的（.hero .hero-rot / .hero .chips /
+                 .hero .memory-suggestions），不匹配 .cond-board。若日后改成 .hero > * 一把隐藏，这块会一起消失。 -->
+            <section class="cond-board" id="condBoard" hidden aria-label="当前的筛选条件">
+                <button type="button" class="cb-summary" id="cbSummaryBar" aria-expanded="true" aria-controls="cbBody">
+                    <span id="cbSummaryText">正在整理当前的筛选条件…</span>
+                    <span class="cb-caret" aria-hidden="true"></span>
+                </button>
+                <div class="cb-body" id="cbBody">
+                    <!-- 经典条件板行：数据细化态 / hero 回退态显示；对话记录(telegram)态由 .cb-in-side CSS 隐藏（那时靠常驻查询条件栏 + 聊天）。 -->
+                    <div class="cb-rows" id="cbRows"></div>
+                    <!-- #cbHistory（对话记录）不在这里：有检索结果时它的家是侧栏 #sideBoardScroll；
+                         无结果有对话时（chat-in-main）由 board.js placeChatLog 搬进 hero 内的 #chatMain。 -->
+                    <p class="cb-step-hint" id="cbStepHint" hidden></p>
+                    <!-- 真歧义时的追问（听不懂 / 三选一 / 词条建议 / 当作新检索）：内联出现在聊天记录下方、对话框上方。
+                         needs_confirm（系统已读懂怎么改）不再走这里——按用户要求发送后直接应用、不弹确认。 -->
+                    <div class="cb-preview" id="cbPreview" hidden></div>
+                    <p class="cb-hint">不想打字的话，直接点每条条件右边的按钮，效果一样。</p>
+                    <details class="cb-about">
+                        <summary>这块是什么</summary>
+                        <p>这里列出的是系统实际在用的筛选条件，改完会重新检索一次。改条件完全在本地完成，没有用到大模型。刷新页面会清空这段对话的记录，条件本身不受影响。</p>
+                    </details>
+                </div>
+            </section>
+            <!-- p10 主区对话模式（chat-in-main）：无检索结果而有对话时，#cbHistory 由 board.js
+                 placeChatLog 搬进这里——Codex 式中央列（转录在上、hero console 输入在下）；
+                 结果落地后搬回侧栏，本容器随之隐藏。 -->
+            <div class="chat-main" id="chatMain" hidden></div>
+            <div class="chips">
+                <button class="chip" data-q="推荐有 FASTQ 的人类乳腺癌数据">有 FASTQ 的人类乳腺癌</button>
+                <button class="chip" data-q="小鼠空间转录组，并下载top5" title="先检索，再把前 5 条打包下载——一句话连检索带执行">小鼠空间转录组，并下载top5</button>
+                <button class="chip" data-q="检索 Visium HD 人类乳腺癌数据，然后把结果导出成 BibTeX 引文" title="先检索乳腺癌数据，再把结果导出成 RIS + BibTeX 双格式引文——检索之外的对话式执行">乳腺癌数据，导出 BibTeX 引文</button>
+                <button class="chip" data-q="检查一下 10x Genomics 有没有新发布的数据集，有的话帮我更新入库" title="联网检查来源更新，新数据集自动入库——检索之外的对话式执行">检查 10x 有没有新数据</button>
+            </div>
+            <section class="memory-suggestions" id="memorySuggestions" hidden aria-labelledby="memorySuggestionsTitle">
+                <div class="memory-suggestions-head"><span id="memorySuggestionsTitle">从你的记忆继续</span><button type="button" id="memorySuggestionsManage">管理</button></div>
+                <div class="memory-suggestion-list" id="memorySuggestionList"></div>
+            </section>
+        </div>
+
+        <div id="resultsWrap" style="display:none">
+            <!-- 结果区头部件整体（vs2 起包进 #resultsHead；2026-08-22 重排为四段）：
+                 ① .res-overview 概览卡（结果区唯一卡片）——标题行（含可行性/任务包/存追踪三钮）+
+                    批次切换（起 segmented 控件造型）+ 审核横幅（去盒化 teal 左线）+
+                    摘要卡（#searchTrace，内嵌 #coverageCaveats；去盒化，覆盖缺口改虚线分隔+琥珀点）；
+                 ② #facetBar 原位不动（有自己的搬家逻辑 facets.js placeFacetBar，严禁包进任何新容器）；
+                 ③ .res-notes 诚实回显行组（unusedQueryTerms/orHandling/actionHint 去盒化小字行，
+                    三条全隐时整组经 :has 归隐）；#identifierLookup 保留原 info-bar 盒子、不进组；
+                 ④ .res-next「下一步」——#ladderNarrow 过宽收窄建议（从概览卡上方下移至此）+
+                    #ladderBar 行动阶梯 chips；两者全隐时整组（连标签）经 :has 归隐。
+                 正常态 #resultsHead{display:contents} 对布局完全透明（内部 id 一律不动）；视图交换态由
+                 board.js placeChatSuite 把它整节点搬进侧栏 #sideBoardScroll 顶部（紧凑卡列表之前，
+                 随列表滚动），主区只剩对话舞台。
+                 两个展开面板 #feasibilityPanel/#taskPackPanel **不进本容器**——它们为主区宽度设计，
+                 交换态留在主区于对话列上方展开。 -->
+            <div id="resultsHead">
+            <section class="res-overview" aria-label="检索概览">
+            <div class="results-head">
+                <div class="results-title">推荐结果<span class="prelim-badge" id="prelimBadge" hidden title="Agent 还在深入思考，屏上是第一阶段先行的结果">初步结果</span></div>
+                <div class="results-head-acts">
+                    <!-- 可行性概览：入口在结果头行，展开面板在结果区内（#feasibilityPanel）。
+                         vs4：按钮内双 span 文案——.bt-full 完整文案（正常态/主区）、.bt-short 短文案
+                         （交换态 300px 窄栏，纯 CSS display 切换；id/点击行为不动）。title 兜完整文案。
+                         .bt-full 文案精简（title 不变）。 -->
+                    <button class="btn feasibility-btn" id="feasibilityBtn" type="button" hidden title="这个方向有多少可复用数据"><span class="bt-full">📊 可复用数据</span><span class="bt-short">📊 可复用</span></button>
+                    <!-- 一句话任务包：结果清单 + 下载脚本 + FAIR 自检 + 引文。按钮只负责展开面板，产包是面板底部那颗按钮。 -->
+                    <button class="btn feasibility-btn" id="taskPackBtn" type="button" hidden title="下载这批数据（真实文件 · 清单脚本 · 引文）"><span class="bt-full">📦 下载这批数据</span><span class="bt-short">📦 下载</span></button>
+                    <!-- 存为追踪（2026-08-22 改名）：把当前检索（display_query + 确定性 spec +
+                         结果 uid + provenance）存成本地追踪；默认同时生成确定性检查基线。显隐由 projects.js
+                         经 results 渲染钩子驱动（有结果才露出，与上面两钮同区同规则）。 -->
+                    <button class="btn feasibility-btn" id="saveProjectBtn" type="button" hidden title="把这次检索存成追踪：复查候选、核验状态、之后可检查有没有新数据"><span class="bt-full">📁 存为追踪</span><span class="bt-short">📁 存为追踪</span></button>
+                </div>
+            </div>
+            <!-- mb1（2026-08-17 结果）：批次切换器——后端批次常驻（响应带
+                 result_batches（>1）+ active_batch），results.js renderBatchSwitcher 在此渲染 pill 组；
+                 缺失/≤1 批恒 hidden（回退 = 既有渲染路径一字不动）。在 .res-overview 内（改
+                 segmented 控件造型，css 承担），随视图交换两态搬家。 -->
+            <div class="batch-bar" id="batchBar" hidden role="tablist" aria-label="本轮回复的检索批次"></div>
+            <div class="audit-banner" id="auditBanner" hidden></div>
+            <!-- 结果摘要：命中计数、实际用了哪几层排序、覆盖缺口提示合并成一段自然语言
+                 （renderResultSummary）；#coverageCaveats 内嵌在本卡（renderCoverageCaveats）。
+                 每一步的原始输出在「设置 → 开发者信息 / 诊断」。 -->
+            <section class="result-summary" id="searchTrace" hidden aria-labelledby="searchTraceTitle">
+                <span id="searchTraceTitle" class="sr-only">本次检索摘要</span>
+                <p class="rs-text" id="resultSummaryText"></p>
+                <div class="coverage-caveats rs-coverage" id="coverageCaveats" hidden></div>
+            </section>
+            </section><!-- /.res-overview -->
+            <div class="facetbar" id="facetBar" hidden>
+                <div class="facet-active" id="facetActive" hidden></div>
+                <div class="facet-groups" id="facetGroups"></div>
+                <!-- 数据细化「提交」条（用户 2026-07-24·点4）：侧栏数据细化模式下勾选分面攒进草稿，
+                     改动数 + 取消/提交在此；提交才应用并拼一条「加入/去掉」消息进对话。默认隐藏，_facetStage 脏时露出。 -->
+                <div class="facet-stage-bar" id="facetStageBar" hidden role="group" aria-label="待提交的细化筛选">
+                    <span class="fsb-count" id="facetStageCount"></span>
+                    <button type="button" class="btn fsb-cancel" id="facetStageCancel">取消</button>
+                    <button type="button" class="btn btn-primary fsb-submit" id="facetStageSubmit">提交</button>
+                </div>
+            </div>
+            <!-- 三条诚实回显条包进 .res-notes（去盒化 2px 左色条小字行）；三条全隐时
+                 整组经 CSS :has 归隐，不占纵向空间。JS/显隐逻辑零改动。 -->
+            <div class="res-notes">
+            <!-- 查询里没有对应筛选维度的描述词（性别 / 年龄 / 受试者 / 功能类）在这里显式回显，避免被静默丢弃 -->
+            <div class="info-bar info-bar-caution coverage-caveats unused-query-terms" id="unusedQueryTerms" hidden></div>
+            <!-- 用户写了「A 或 B」：引擎能表达的「或」只有「同一维度多个值」，这里如实说明本次落到了哪一档 -->
+            <div class="info-bar info-bar-caution coverage-caveats unused-query-terms" id="orHandling" hidden></div>
+            <!-- 用户在同一句里说了「打包 / 下载脚本 / 导出引文」：检索不含这一步，这里指路到打包入口 -->
+            <div class="info-bar coverage-caveats unused-query-terms" id="actionHint" hidden></div>
+            </div><!-- /.res-notes -->
+            <!-- 一句话直接执行的回执：p10 起长在对话流里（行动流 + 总结 sys，board.js/act.js），结果区不再设挂点。
+                 保留原 info-bar 盒子，不进 .res-notes 行组（内容体量自成一卡）。 -->
+            <div class="info-bar identifier-lookup" id="identifierLookup" hidden></div>
+            <!-- 「下一步」分组——收窄建议 + 行动阶梯 chips 收进同一容器；两者全隐时整组
+                 （连 .res-next-label 标签）经 CSS :has 归隐。 -->
+            <div class="res-next">
+                <span class="res-next-label">下一步</span>
+                <!-- 过宽收窄建议：result_total 超阈值且
+                     有未固定维度时显示 1–2 条（「找到 N 条。按物种/组织收窄更容易比较」），
+                     点击=直接套对应 facet 筛选（确定性，零 LLM）。渲染在 ladder.js。
+                     从概览卡上方下移到「下一步」组（紧邻行动 chips）。 -->
+                <div class="ladder-narrow" id="ladderNarrow" hidden></div>
+                <!-- 下一步行动阶梯 chips：结果区规则式选取
+                     2–4 颗（零 LLM）——① 直接执行（套分面）/ ② 确定性导出（探测）/ ③ 任务卡
+                     （绑定既有能力 recipe 或普通路由）。渲染在 ladder.js（results 渲染钩子驱动）。 -->
+                <div class="ladder-bar" id="ladderBar" hidden></div>
+            </div><!-- /.res-next -->
+            </div><!-- /#resultsHead -->
+            <div class="feasibility-panel" id="feasibilityPanel" hidden></div>
+            <div class="task-pack-panel" id="taskPackPanel" hidden></div>
+            <!-- 视图交换（2026-08-16 vs1/vs2）的主区对话舞台：点侧栏 #swSwapBtn 后，#cbHistory 搬进
+                 上槽（.cbh-main 自滚动）、#chatComposer 整棵搬进下槽（含 #scopePop 弹层——
+                 两槽都不裁剪，弹层向上弹不被切）；#resultsGrid 与 #resultsHead（vs2 起）同时搬进
+                 侧栏，主区只剩本舞台与上方两展开面板。
+                 搬家由 board.js placeChatSuite 统一收口（整节点 move，不 destroy/recreate）；
+                 非交换态本容器恒 hidden，两个孩子槽恒为空。 -->
+            <div class="chat-stage" id="chatStage" hidden>
+                <div class="chat-stage-log" id="chatStageLog"></div>
+                <div class="chat-stage-bar" id="chatStageBar"></div>
+            </div>
+            <div class="grid" id="resultsGrid"></div>
+        </div>
+    </section>
+
+    <!-- ============ 数据集浏览 ============ -->
+    <section class="view" data-view="browse">
+        <div class="page-head">
+            <h2>数据集浏览</h2>
+            <p>全部来源共 <b id="browseTotal">…</b> 条（含您自己上传的数据），可按来源、物种、平台、FASTQ、年份、关键词筛选。</p>
+        </div>
+        <div class="toolbar">
+            <div class="tb-group" role="group" aria-label="筛选操作">
+                <input class="search-input" id="fSearch" type="text" placeholder="筛选名称 / 组织 / 疾病…">
+                <select class="select" id="fSource"><option value="">全部来源</option></select>
+                <select class="select" id="fSpecies"><option value="">全部物种</option></select>
+                <select class="select" id="fPlatform"><option value="">全部平台</option></select>
+                <label class="switch"><input type="checkbox" id="fFastq"><span class="slider"></span>仅含 FASTQ</label>
+                <button class="btn" id="browseFilterClear" type="button" title="复位关键词、来源、物种、平台、FASTQ 与年份范围">清空筛选</button>
+            </div>
+            <div class="tb-group tb-display" role="group" aria-label="显示控制">
+                <label class="tb-pagesize">每页
+                    <select class="select" id="fPageSize" aria-label="每页条数">
+                        <option value="12">12</option>
+                        <option value="24" selected>24</option>
+                        <option value="48">48</option>
+                    </select>
+                条</label>
+            </div>
+        </div>
+        <section class="browse-timeline" id="browseTimeline" aria-labelledby="browseTimelineTitle">
+            <div class="timeline-head">
+                <div><h3 id="browseTimelineTitle">发表时间线</h3><p id="browseTimelineSummary">全部年份</p></div>
+                <div class="timeline-range" aria-label="发表年份范围">
+                    <label>从 <select id="fYearFrom" aria-label="浏览起始年份"><option value="">不限</option></select></label>
+                    <span>至</span>
+                    <label><select id="fYearTo" aria-label="浏览截止年份"><option value="">不限</option></select></label>
+                    <button class="btn timeline-clear" id="timelineClear" type="button">清除</button>
+                </div>
+            </div>
+            <div class="timeline-bars" id="timelineBars" role="group" aria-label="按年份统计的数据集数量"></div>
+            <p class="timeline-note" id="timelineUnknown">正在统计未标注发表日期的数据集…</p>
+        </section>
+        <div class="up-card">
+            <div class="up-row">
+                <div class="upzone" id="uploadZone">拖拽 JSON 到此处或 <b>点击选择</b>，上传后即可检索</div>
+                <input type="file" id="uploadInput" accept=".json" hidden>
+                <input class="up-source" id="uploadSource" type="text" placeholder="来源名称（可选）">
+                <button class="btn btn-primary" id="uploadBtn">上传</button>
+                <span class="up-status" id="uploadStatus">未选择文件</span>
+            </div>
+            <div class="up-help">
+                上传一个 JSON 文件（UTF-8 编码）。<strong>只有数据集名称（<code>dataset_name</code>）必填</strong>，其余字段可省略；只进入外部库，不影响产品自带的 10x Genomics 数据。
+                <pre class="up-example">[{ "dataset_name": "我的人肺数据", "species": "Human", "tissue": "lung" }]</pre>
+                <div class="up-tip">物种 / 组织 / 疾病建议用英文通用名（如 <code>Human</code>、<code>Mouse</code>、<code>lung</code>），否则筛选时可能被漏掉。</div>
+                <a class="up-spec-link" href="/spec/upload" target="_blank" rel="noopener">查看完整规范 →</a>
+            </div>
+            <div class="up-warn" id="uploadWarn" hidden></div>
+        </div>
+        <div class="results-head">
+            <div class="results-title">数据集</div>
+            <div class="results-meta">符合条件 <b id="browseCount">0</b> 条</div>
+        </div>
+        <div class="grid" id="browseGrid"><div class="muted-block">加载中…</div></div>
+        <div class="pager">
+            <button class="btn" id="browsePrev">← 上一页</button>
+            <span class="pager-info" id="browsePageInfo">第 1 / 1 页</span>
+            <button class="btn" id="browseNext">下一页 →</button>
+        </div>
+    </section>
+
+    <!-- ============ 我的收藏 ============ -->
+    <!-- ============ 帮助 ============ -->
+    <section class="view" data-view="help">
+        <div class="page-head"><h2>帮助 / 关于</h2></div>
+        <div class="prose">
+            <h3>这是什么</h3>
+            <p>BioData Agent 是公开单细胞与空间组学<strong>数据集目录</strong>的中文检索工具。你用中文描述实验需求，它在 10x Genomics、CELLxGENE、Human Cell Atlas、EBI SCEA、ArrayExpress、ENCODE、HuBMAP、Single Cell Portal、NCBI GEO 与你上传的数据集里找数据，并说明为什么推荐这一条。</p>
+            <button class="btn btn-primary help-tour-btn" id="tutorialReplay" type="button">重新打开新手教程</button>
+            <h3>怎么用</h3>
+            <ul>
+                <li><strong>智能查询</strong>：一句话描述需求（物种 / 组织 / 疾病 / 平台 / 是否要 FASTQ），点发送。</li>
+                <li><strong>继续对话</strong>：结果出来后，在左下角窗口继续追问——细化筛选、换条件重查，或让它执行操作（导出引文、打包下载、管护数据库等）。</li>
+                <li><strong>数据集浏览</strong>：不带问题时，直接按物种 / 平台 / 关键词浏览整库。</li>
+                <li><strong>我的库 / 历史记录</strong>：左侧导航打开浮窗。追踪、收藏与历史记录都存在你本地浏览器，不上传服务器。</li>
+                <li><strong>设置</strong>：左侧导航「设置」，调整排序与推荐数量；API 配置在「AI / API 配置」里。</li>
+            </ul>
+            <h3>它怎么给出推荐</h3>
+            <p>先自动识别你话里的来源、时间、物种、组织、疾病、平台和 FASTQ 条件做关键词检索，再由 AI 判断你的意图是检索还是操作（导出、下载、管护等），并触发对应行为。结果上方的摘要写明这次实际用了哪几层排序、库中共匹配多少条。</p>
+            <h3>排序说明</h3>
+            <ul>
+                <li><strong>规则排序</strong>：始终启用，负责条件筛选和基础顺序。</li>
+                <li><strong>本地精准重排</strong>：本地语义模型调整顺序，不需要 API Key。</li>
+                <li><strong>AI 重排</strong>：联网调用 AI 调整顺序，需要先在设置里配置 API。</li>
+                <li><strong>AI 润色推荐说明</strong>：只改善文字表达，不改变数据和排序。</li>
+            </ul>
+            <p>开启「自动选择」后，系统按查询难度决定是否叠加后两层；关闭后可手动控制。</p>
+            <h3>API 在哪里配置</h3>
+            <p>打开左侧「设置」，展开「AI / API 配置」，选择服务商后填入接口地址、模型名称和 API Key。Key 默认只留在本次会话内存中，勾选「记住」才会持久保存。保持默认接口地址可不填密钥；没有 Key 时，规则排序和本地精准重排仍可正常使用。</p>
+            <h3>数据来源</h3>
+            <p>元数据来自 10x Genomics、CELLxGENE、Human Cell Atlas、EBI SCEA、ArrayExpress、ENCODE、HuBMAP、Single Cell Portal、NCBI GEO、Zenodo、refine.bio 与你上传的数据集。「含 FASTQ」表示提供原始测序数据。</p>
+            <h3>上传自己的数据集</h3>
+            <p>在「数据集浏览」页的上传区拖入一个 JSON 文件即可，只有数据集名称必填，上传后立即可检索，不影响自带数据。字段说明见<a href="/spec/upload" target="_blank" rel="noopener">数据集上传规范</a>。</p>
+            <h3>接入 AI 助手（MCP）</h3>
+            <p id="mcpLeadBoth">把检索与管护能力接进你自己的 AI 助手（Claude Code / Kimi Code / Codex 等支持 MCP 的助手）。两种方式任选，体验相同：<strong>点一下按钮复制提示词 → 粘给你的助手发送 → 它代你完成全部配置</strong>，装完即可使用。</p>
+            <p id="mcpLeadLocal" hidden>把检索与管护能力接进你自己的 AI 助手（Claude Code / Kimi Code / Codex 等支持 MCP 的助手）：<strong>点一下按钮复制提示词 → 粘给你的助手发送 → 它代你完成全部配置</strong>，装完即可使用。</p>
+            <div class="help-agent-online" id="onlineMcpBlock" hidden>
+                <h4>方式一 · 在线接入（免安装）</h4>
+                <p>直接用本网页版的服务，什么都不用装。在线形态是纯确定性服务（不消耗服务端 LLM 额度），语料读写落在你的账户空间；「下载到本机 / 本地资产核验」等本机能力仅本地版提供。</p>
+                <ol class="help-steps">
+                    <li>点「生成接入令牌」；</li>
+                    <li>点「复制接入提示词（含令牌）」；</li>
+                    <li>粘给你的助手，发送——它会把 MCP 配好并自行验收。</li>
+                </ol>
+                <div class="help-agent-acts">
+                    <button class="btn btn-primary" id="mcpTokenMintBtn" type="button">生成接入令牌</button>
+                </div>
+                <div class="mcp-token-out" id="mcpTokenOut" hidden>
+                    <p class="mcp-token-warn">令牌只显示这一次。它等同于你账户的访问凭证：不要分享给他人、不要贴进公开渠道；泄露后在下方列表吊销再重新生成。</p>
+                    <pre class="mcp-token-config" id="mcpTokenConfig"></pre>
+                    <div class="help-agent-acts">
+                        <button class="btn btn-primary" id="mcpTokenCopyBtn" type="button">复制接入提示词（含令牌）</button>
+                        <button class="btn btn-ghost" id="mcpTokenCopyJsonBtn" type="button" title="高级：只复制 MCP 客户端配置 JSON，自行手工配置时使用">仅复制配置 JSON</button>
+                    </div>
+                </div>
+                <div class="mcp-token-list" id="mcpTokenList"></div>
+            </div>
+            <h4 id="mcpLocalTitle">方式二 · 本地接入（功能最全）</h4>
+            <p>前提：本机装有 BioData Agent 桌面安装版或源码版（从项目 GitHub 仓库获取）。本地 MCP 包含全部能力（LLM 质量杠杆、文件下载到本机、本地资产核验）。</p>
+            <p>点「复制接入提示词」→ 粘给助手发送，它会代你定位服务器、自检、注册、安装技能包并验收，全程无需你动手。</p>
+            <div class="help-agent-acts">
+                <button class="btn btn-primary" id="agentPromptCopyBtn" type="button">复制接入提示词</button>
+                <a class="btn btn-ghost" href="/api/guide/skill.zip" download title="技能包 = 给助手看的使用约束说明。提示词已内置自动安装步骤，一般不需要手动下载；想手动安装时才用">下载技能包（一般不需要）</a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- 设置抽屉 -->
+<aside class="drawer" id="settings" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" aria-hidden="true" inert>
+    <div class="drawer-head"><h3 id="settingsTitle">设置</h3><button class="icon-btn" id="settingsClose" type="button" aria-label="关闭设置">✕</button></div>
+    <div class="drawer-body">
+        <div class="set-block account-box" id="accountBox">
+            <div class="set-row">
+                <span class="label"><strong>账户</strong><small id="accountStateSub">数据按账号隔离</small></span>
+                <!-- 账号 chip（保持登录 + 快捷切换；2026-08-03 从导航卡挪进设置——用户不常操作，
+                     不必占导航位）。点击弹账号菜单：最近账号一键切换（/api/account/switch）/ 登录其他账号 / 退出登录。 -->
+                <div class="acct-zone" id="acctZone">
+                    <button class="acct-chip" id="accountChip" type="button" aria-haspopup="menu" aria-expanded="false" title="账号">
+                        <span class="acct-avatar" id="accountAvatar" aria-hidden="true">?</span>
+                        <span class="acct-name" id="accountChipName">未登录</span>
+                        <svg class="acct-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4.5 9.75 3.5-3.5 3.5 3.5"/></svg>
+                    </button>
+                    <div class="acct-menu" id="accountMenu" role="menu" hidden></div>
+                </div>
+            </div>
+        </div>
+        <details class="api-config" id="apiConfig">
+            <summary id="apiConfigToggle">
+                <span class="api-config-main">
+                    <span class="api-config-ico" aria-hidden="true">API</span>
+                    <span>
+                        <strong>AI / API 配置</strong>
+                        <small>AI 排序与润色所需</small>
+                    </span>
+                </span>
+                <span class="api-config-status" id="apiConfigStatus">本地演示</span>
+                <span class="api-config-chevron" aria-hidden="true">
+                    <svg viewBox="0 0 16 16" focusable="false">
+                        <path d="m4.5 6.25 3.5 3.5 3.5-3.5"></path>
+                    </svg>
+                </span>
+            </summary>
+            <div class="api-config-body" id="apiConfigBody">
+                <label class="set-label" for="cfgProvider" style="margin-top:0;">AI 接入方式</label>
+                <select class="input" id="cfgProvider">
+                    <option value="mock">本地演示（无需密钥）</option>
+                    <!-- 限量试用通道：key/模型由服务端托管并锁定，每日限轮；
+                         服务端未配置 BIODATA_TRIAL_API_KEY 时按未配置处理（llmCapable=False）。 -->
+                    <option value="trial">限量试用（免密钥 · 每日限轮）</option>
+                    <optgroup label="主流 API 服务商">
+                        <option value="deepseek">DeepSeek</option>
+                        <option value="kimi">Kimi</option>
+                        <option value="qwen">Qwen（通义千问）</option>
+                        <option value="zhipuai">GLM（智谱）</option>
+                        <option value="openrouter">OpenRouter（多模型聚合）</option>
+                        <option value="openai">OpenAI</option>
+                    </optgroup>
+                    <optgroup label="高级接入">
+                        <option value="compatible">兼容接口（自定义）</option>
+                        <option value="local">本地模型</option>
+                    </optgroup>
+                </select>
+                <label class="set-label" for="cfgBaseUrl">接口地址</label>
+                <input class="input" id="cfgBaseUrl" type="text" placeholder="例如 https://api.example.com/v1" autocomplete="off" spellcheck="false">
+                <label class="set-label" for="cfgModel">模型名称</label>
+                <input class="input" id="cfgModel" type="text" placeholder="例如 deepseek-chat" autocomplete="off" spellcheck="false">
+                <label class="set-label" for="cfgApiKey">API Key（默认仅本次会话）</label>
+                <input class="input" id="cfgApiKey" type="password" placeholder="默认地址可留空，改过必填">
+                <!-- 限量试用额度卡：仅 trial 预设显示——地址/密钥行整行隐藏，
+                     模型名上屏在锁死的模型输入框里；剩余轮数数据源 /api/account/trial-quota。 -->
+                <div class="trial-quota" id="trialQuotaInfo" hidden>
+                    <div class="trial-quota-top">
+                        <span class="trial-quota-title">今日剩余 <strong id="trialQuotaNum">–</strong></span>
+                        <span class="trial-quota-reset">每日 8:00 重置</span>
+                    </div>
+                    <div class="trial-quota-track"><div class="trial-quota-fill" id="trialQuotaFill"></div></div>
+                </div>
+                <div class="set-hint" id="providerPresetHint">选择主流服务商后会自动填入接口地址和推荐模型；保持默认地址可不填密钥，改过则必须填写。</div>
+            </div>
+        </details>
+
+        <div class="pipe">
+            <!-- 设置三维度（2026-08-03 重写）：
+                 维度 A 排序策略＝规则排序（恒开标识）∥ 本地精准重排 ∥ AI 重排（三者并列）；
+                 维度 B 自动选择排序策略＝开则隐藏 A 的手动项，按规则匹配结果自动决定重排层；
+                 维度 C AI 执行＝对话指令理解与操作执行（合并旧「说了就直接做」+「Agent 规划执行」）。
+                 依赖 LLM 的开关统一由 API 可用性门控（shell.js llmCapable 单一判据）：
+                 未配 key 禁点并弹「API 未配置」；已配必可开关；运行时被撤 key 只降级标注。 -->
+            <section class="strategy-panel ranking-control auto-owned" id="rankingControl" aria-labelledby="strategyTitle">
+                <div class="strategy-head" id="nodeStrategy">
+                    <div class="strategy-heading">
+                        <span class="node-ico" aria-hidden="true">⚡</span>
+                        <span>
+                            <strong id="strategyTitle">排序策略</strong>
+                            <small>决定推荐结果的排列顺序</small>
+                        </span>
+                    </div>
+                    <label class="strategy-auto strategy-tip" id="strategyAutoRow" tabindex="-1" aria-describedby="strategyAutoDesc" data-tooltip="开启后，系统按每次查询自动决定是否使用本地精准重排或 AI 重排，下方手动开关会隐藏；AI 重排候选数保留可调。某项不可用时会改用规则排序，并在结果摘要中说明。">
+                        <span>自动选择</span>
+                        <span class="switch"><input type="checkbox" id="cfgStrategy" checked><span class="slider"></span></span>
+                    </label>
+                </div>
+
+                <p class="strategy-mode" id="strategyModeHint" role="status" aria-live="polite"></p>
+
+                <div class="strategy-choice-grid" role="group" aria-label="排序方式" id="strategyChoices">
+                    <div class="strategy-choice strategy-choice-rule strategy-rule strategy-tip active" id="nodeRule" tabindex="0" aria-label="规则排序，始终启用" aria-describedby="strategyRuleDesc" data-tooltip="先按物种、组织、疾病、技术和原始数据等明确条件筛选并计分。无需联网，结果稳定，也是所有模式的底层把关。">
+                        <span class="strategy-choice-copy">
+                            <strong>规则排序</strong>
+                            <small>始终启用</small>
+                        </span>
+                        <span class="strategy-choice-state" aria-hidden="true"></span>
+                    </div>
+                    <label class="strategy-choice strategy-tip" id="nodeRecall" tabindex="-1" aria-describedby="strategyLocalDesc" data-tooltip="用语义模型（本机模型或服务器在线服务）比较查询和候选的含义，适合说法不同但意思相近的需求；不可用或调用失败时，自动改用规则排序。">
+                        <input type="checkbox" id="cfgRecall">
+                        <span class="strategy-choice-copy">
+                            <strong>本地精准重排</strong>
+                            <small>本地运行</small>
+                        </span>
+                        <span class="strategy-choice-state" aria-hidden="true"></span>
+                    </label>
+                    <label class="strategy-choice strategy-tip" id="nodeRerank" tabindex="-1" aria-describedby="strategyRerankDesc" data-tooltip="把候选交给大模型重新排序，适合复杂描述；失败时保留原有排序。需要先在「AI / API 配置」里配好密钥。">
+                        <input type="checkbox" id="cfgRerank">
+                        <span class="strategy-choice-copy">
+                            <strong>AI 重排</strong>
+                            <small>联网排序 <span class="gate-tag" id="gateTagRerank" hidden></span></small>
+                        </span>
+                        <span class="strategy-choice-state" aria-hidden="true"></span>
+                    </label>
+                </div>
+                <span class="sr-only" id="strategyAutoDesc">自动选择会依据查询难度和可用能力选择排序层，并在不可用时改用基础方式。</span>
+                <span class="sr-only" id="strategyRuleDesc">规则排序依据明确字段筛选和计分，无需联网，始终启用。</span>
+                <span class="sr-only" id="strategyLocalDesc">精准重排使用语义模型（本机模型或服务器在线服务），不可用时改用规则排序。</span>
+                <span class="sr-only" id="strategyRerankDesc">AI 重排把候选交给大模型重新排序，需要 API 密钥。</span>
+
+                <div class="local-model-install" id="modelInstallRow" aria-live="polite">
+                    <div class="local-model-copy">
+                        <strong id="modelInstallTitle">本地模型未安装</strong>
+                        <small id="modelInstallStatus">可在线安装；约下载 3 GB，安装后约占 5 GB。不装也能正常检索。</small>
+                    </div>
+                    <div class="local-model-actions">
+                        <button class="btn local-model-install-btn" id="modelInstallBtn" type="button">在线安装</button>
+                        <button class="btn local-model-cancel-btn" id="modelCancelBtn" type="button" hidden>取消</button>
+                    </div>
+                    <div class="local-model-progress" id="modelInstallProgress" hidden aria-hidden="true"><span></span></div>
+                </div>
+
+                <div class="strategy-rerank-detail off" id="rerankDetail">
+                    <div class="strategy-inline-field">
+                        <label for="cfgRerankTopN">AI 重排候选数 <small>（交给 AI 重新排序的条数，1–50）</small></label>
+                        <input class="set-num" id="cfgRerankTopN" type="number" inputmode="numeric" min="1" max="50" step="1" value="12" aria-label="AI 重排候选数">
+                    </div>
+                </div>
+                <div class="strategy-auto-ai" id="strategyDetail">
+                    <span>
+                        <strong>允许自动使用 AI <span class="gate-tag" id="gateTagAutoLlm" hidden></span></strong>
+                        <small>自动模式下遇到复杂查询时，可以用 AI 重排</small>
+                    </span>
+                    <label class="switch"><input type="checkbox" id="cfgAutoLlm"><span class="slider"></span></label>
+                </div>
+            </section>
+
+            <div class="node setting-item" id="nodePolish">
+                <div class="node-row">
+                    <span class="node-ico">✎</span>
+                    <div class="node-body">
+                        <div class="node-name">AI 润色推荐说明 <span class="gate-tag" id="gateTagPolish" hidden></span></div>
+                        <div class="node-desc">只优化推荐理由的文字，不改变结果与排序</div>
+                    </div>
+                    <label class="switch"><input type="checkbox" id="cfgPolish"><span class="slider"></span></label>
+                </div>
+            </div>
+
+            <div class="node setting-item" id="nodeAgentExec">
+                <div class="node-row">
+                    <span class="node-ico">⤓</span>
+                    <div class="node-body">
+                        <div class="node-name">AI 执行 <span class="gate-tag" id="gateTagAgentExec" hidden></span><button type="button" class="help-dot strategy-tip" aria-label="AI 执行的技术细节" data-tooltip="开启后，您说的每句话先由 AI 判断是「检索」还是「操作」；操作类（打包下载、导入、删除、联网搜索等）会直接执行。删除进回收站可恢复，每步操作都有记录；最近一次入库/删除/恢复可用回执里的「撤回这次执行」一键撤回。">?</button></div>
+                        <div class="node-desc" id="agentExecDesc">允许 AI 按您的话直接执行操作；每步都有记录，最近一次可一键撤回</div>
+                    </div>
+                    <label class="switch"><input type="checkbox" id="cfgAgentExec" checked><span class="slider"></span></label>
+                </div>
+            </div>
+
+            <div class="node setting-item">
+                <div class="node-row">
+                    <span class="node-ico">▦</span>
+                    <div class="node-body">
+                        <div class="node-name">推荐数量</div>
+                        <div class="node-desc">返回 1–50 条结果，默认 10 条</div>
+                    </div>
+                    <input class="set-num" id="cfgTopK" type="number" inputmode="numeric" min="1" max="50" step="1" value="10" aria-label="推荐数量">
+
+                </div>
+            </div>
+        </div>
+
+        <div class="set-block" style="margin-top:16px;">
+            <div class="set-row">
+                <span class="label">记住设置</span>
+                <label class="switch"><input type="checkbox" id="cfgSaveSession"><span class="slider"></span></label>
+            </div>
+            <div class="set-row" style="margin-top:10px;">
+                <span class="label">记住api key</span>
+                <label class="switch"><input type="checkbox" id="cfgRememberApiKey"><span class="slider"></span></label>
+            </div>
+        </div>
+
+        <div class="set-block memory-setting">
+            <div class="set-row">
+                <span class="label"><strong>用户记忆<button type="button" class="help-dot strategy-tip" aria-label="用户记忆说明" data-tooltip="只保存在当前浏览器，不上传；记忆只作为可点击的建议，不会自动改变筛选条件。此开关为本机共用：同一浏览器里所有账户一起生效。">?</button></strong><small>记住您主动保存的研究需求与偏好；默认开启；此开关为本机所有账户共用</small></span>
+                <label class="switch"><input type="checkbox" id="memoryEnabled" checked><span class="slider"></span></label>
+            </div>
+            <button class="btn" id="memoryManageBtn" type="button">管理用户记忆</button>
+        </div>
+
+        <!-- 使用反馈：默认开启本地采集；per-profile consent；尽力过滤后经明文 HTTP 上传
+             （已知风险裁决，consent 弹窗同口径）；手动「导出反馈包」保留作兜底回传
+             （细节收进「?」帮助钮）。设置卡含「本机编号」行与 MCP 调用记录一句，协议 v2 口径。 -->
+        <div class="set-block usage-setting">
+            <div class="set-row">
+                <span class="label"><strong>使用反馈<button type="button" class="help-dot strategy-tip" aria-label="使用反馈说明" data-tooltip="本版本默认开启本地数据采集，每个本机账户首次发送前独立确认。记录包含 MCP 调用的工具名、参数摘要、耗时与成败，并先保存在本机。上传前会尽力过滤手机号、证件号、邮箱和直接标识符，但这并不等同于匿名化。数据按运营方配置的传输和保留政策上传，用于改进推荐排序、产品体验和评测基准；请勿输入敏感内容。此授权不包含训练或微调模型；模型/Agent 训练使用下方独立开关。">?</button></strong><small>采集数据用于能力改进</small></span>
+                <label class="switch"><input type="checkbox" id="nodeUsage"><span class="slider"></span></label>
+            </div>
+            <div class="set-row" style="margin-top:10px;">
+                <span class="label">允许用于模型 / Agent 训练<small>以更细颗粒度采集数据</small></span>
+                <label class="switch"><input type="checkbox" id="usageTrainingToggle"><span class="slider"></span></label>
+            </div>
+            <button class="btn" id="benchfbExportBtn" type="button" disabled>导出反馈包</button>
+            <!-- 「向开发者发送意见」——意见经开发者公钥加密后走既有遥测通道
+                 点发送=对该条不可变记录的明示单次授权（关遥测也能发，不改 usage 开关/consent）；
+                 公钥未配置/WebCrypto 不可用时只给复制兜底。对话框见 #feedbackModal。 -->
+            <button class="btn" id="feedbackSendEntryBtn" type="button">向开发者发送意见</button>
+            <small class="usage-install">本机编号：<code id="usageInstallId">尚未产生数据</code>——请求删除已上传数据时，把该编号发给项目所有者。</small>
+        </div>
+
+        <details class="dev">
+            <summary>开发者信息 / 诊断</summary>
+            <div class="dev-body">
+                <div class="kv"><span class="k">pipeline</span><span class="v" id="stPipeline">-</span></div>
+                <div class="kv"><span class="k">provider</span><span class="v" id="stProvider">-</span></div>
+                <div class="kv"><span class="k">llm_attempted</span><span class="v" id="stAttempted">-</span></div>
+                <div class="kv"><span class="k">llm_succeeded</span><span class="v" id="stSucceeded">-</span></div>
+                <div class="kv"><span class="k">llm_response_used</span><span class="v" id="stUsed">-</span></div>
+                <div class="kv"><span class="k">fallback_reason</span><span class="v" id="stFallback">-</span></div>
+                <div class="kv"><span class="k">strategy</span><span class="v" id="stStrategy">-</span></div>
+                <div class="kv"><span class="k">audit</span><span class="v" id="stAudit">-</span></div>
+                <button class="btn" id="diagnoseBtn" style="margin-top:12px;width:100%;justify-content:center;">运行诊断</button>
+                <pre class="raw-md" id="rawMarkdown">最近一次检索的原始输出会显示在这里。</pre>
+            </div>
+        </details>
+    </div>
+    <div class="drawer-foot">
+        <button class="btn btn-primary" id="saveConfigBtn">保存设置</button>
+    </div>
+</aside>
+
+<div class="overlay" id="overlay"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- 首次进入的非阻塞导览：不遮死页面，可跳过，可从帮助页重放。 -->
+<aside class="onboarding" id="onboarding" hidden aria-live="polite" aria-label="新手教程">
+    <div class="onboarding-surface" id="onboardingSurface">
+        <div class="onboarding-head" id="onboardingDragHandle" title="移动教程面板">
+            <span class="onboarding-head-main"><span class="onboarding-progress" id="onboardingProgress">1 / 14</span><span class="onboarding-drag-hint">可拖动</span></span>
+            <button class="icon-btn onboarding-close" id="onboardingClose" type="button" aria-label="跳过新手教程">✕</button>
+        </div>
+        <div class="onboarding-copy">
+            <h3 id="onboardingTitle"></h3>
+            <p id="onboardingText"></p>
+            <div class="onboarding-visuals" id="onboardingVisuals" hidden aria-hidden="true">
+                <div class="tour-visual tour-query" data-onboarding-visual="query" hidden>
+                    <div class="tour-query-line">近三年的人类乳腺癌数据，不要 FASTQ</div>
+                    <div class="tour-arrow" aria-hidden="true">↓</div>
+                    <div class="tour-token-row">
+                        <span><b>时间</b> 近三年</span><span><b>物种</b> 人类</span><span><b>疾病</b> 乳腺癌</span><span class="tour-token-negative"><b>排除</b> FASTQ</span>
+                    </div>
+                </div>
+                <div class="tour-visual tour-scope" data-onboarding-visual="scope" hidden>
+                    <div><small>数据来源</small><strong>自动识别 · CELLxGENE</strong></div>
+                    <div><small>发表时间</small><strong>自动识别 · 近三年</strong></div>
+                </div>
+                <div class="tour-visual tour-provider" data-onboarding-visual="provider" hidden>
+                    <div class="tour-provider-brands">
+                        <button type="button" class="tour-provider-brand" data-tour-provider="deepseek" aria-pressed="false">DeepSeek</button>
+                        <button type="button" class="tour-provider-brand" data-tour-provider="kimi" aria-pressed="false">Kimi</button>
+                        <button type="button" class="tour-provider-brand" data-tour-provider="qwen" aria-pressed="false">Qwen</button>
+                        <button type="button" class="tour-provider-brand" data-tour-provider="zhipuai" aria-pressed="false">GLM</button>
+                        <button type="button" class="tour-provider-brand" data-tour-provider="openrouter" aria-pressed="false">OpenRouter</button>
+                    </div>
+                    <div class="tour-arrow" aria-hidden="true">↓</div>
+                    <div class="tour-provider-fill"><span>接口地址</span><strong>自动填入</strong><span>模型名称</span><strong>自动填入</strong><span>API Key</span><strong>由你填写</strong></div>
+                </div>
+                <div class="tour-visual tour-ranking" data-onboarding-visual="ranking" hidden>
+                    <div class="tour-rank-stage is-required"><span class="tour-rank-num">1</span><strong>规则排序</strong><small>必选条件筛选 + 基础计分<br>始终启用</small></div>
+                    <span class="tour-rank-link" aria-hidden="true">→</span>
+                    <div class="tour-rank-stage"><span class="tour-rank-num">2</span><strong>本地精准重排</strong><small>本机语义模型<br>无需 API Key</small></div>
+                    <span class="tour-rank-link" aria-hidden="true">→</span>
+                    <div class="tour-rank-stage"><span class="tour-rank-num">3</span><strong>AI 重排</strong><small>复杂候选再排序<br>需要 API</small></div>
+                    <div class="tour-rank-guard"><span aria-hidden="true">✓</span>后两层只调整已通过筛选的候选，不能推翻必选条件</div>
+                </div>
+                <div class="tour-visual tour-polish" data-onboarding-visual="polish" hidden>
+                    <div class="tour-polish-copy"><small>原始说明</small><span>匹配人类、乳腺癌，且不含 FASTQ。</span></div>
+                    <span class="tour-polish-arrow" aria-hidden="true">→</span>
+                    <div class="tour-polish-copy is-polished"><small>AI 润色后</small><span>该数据集满足人类乳腺癌研究需求，并排除了 FASTQ 文件。</span></div>
+                    <div class="tour-polish-lock">结果集合与顺序保持不变</div>
+                </div>
+                <div class="tour-visual tour-trace" data-onboarding-visual="trace" hidden>
+                    <div><span class="tour-trace-mark">1</span><p><strong>识别条件</strong><small>人类 · 乳腺癌 · 排除 FASTQ</small></p></div>
+                    <div><span class="tour-trace-mark">2</span><p><strong>本地精准重排</strong><small>本地语义模型已启用</small></p></div>
+                    <div><span class="tour-trace-mark is-fallback">3</span><p><strong>AI 重排</strong><small>未授权，保留本地排序</small></p></div>
+                </div>
+                <div class="tour-visual tour-refine" data-onboarding-visual="refine" hidden>
+                    <div class="tour-refine-facets"><small>细化筛选</small><span>组织 · breast</span><span>来源 · CELLxGENE</span><span>年份 · 2024</span></div>
+                    <div class="tour-refine-card"><span class="tour-refine-kicker">候选数据集</span><strong>Human breast cancer atlas</strong><small>结构化元数据可核对</small><span class="tour-refine-button">数据集详情</span></div>
+                </div>
+                <!-- 详情页步骤用真界面实拍（随包 /static/assets/，同源、离线可用），不再是手绘示意图。 -->
+                <div class="tour-visual tour-detail" data-onboarding-visual="detail" hidden>
+                    <img src="/static/assets/onboarding-dataset-detail.png?v=20260923-domainpack2" alt="数据集详情页实拍：页头有数据集标题、徽章与「打开数据集页 / 下载数据」按钮；下方依次是介绍、全部文件、元数据兼容的数据集、投稿可用性与 FAIR 自检、导出引文、数据集对比六个子标签，当前打开的是介绍。" loading="lazy">
+                    <div class="tour-detail-fallback" hidden>这是「数据集详情」页的实拍截图：页头为数据集标题、徽章与「打开数据集页 / 下载数据」按钮，下方依次是六个子标签——介绍 · 全部文件 · 元数据兼容 · FAIR 自检 · 导出引文 · 数据集对比。</div>
+                </div>
+                <div class="tour-visual tour-board" data-onboarding-visual="board" hidden>
+                    <div class="tour-board-summary"><span>正在按 3 个条件筛选</span><span>当前结果 190 条</span></div>
+                    <div class="tour-board-row"><small>物种</small><strong>Human</strong><span>改</span><span>不按这条筛</span></div>
+                    <div class="tour-board-row"><small>组织</small><strong>Lung</strong><span>改</span><span>不按这条筛</span></div>
+                    <div class="tour-board-say">换成小鼠</div>
+                </div>
+                <!-- 能力心智前置：不用 React/RAG 术语，三条可直接抄的完整任务说明“检索只是起点”。 -->
+                <div class="tour-visual tour-react" data-onboarding-visual="react" hidden>
+                    <div class="tour-query-line">搜乳腺癌数据，对比前两条，检查投稿可用性，再导出引文</div>
+                    <div class="tour-query-line">下载 Xenium 人类乳腺癌</div>
+                    <div class="tour-query-line">检查一下 10x Genomics 有没有新发布的数据集，有的话帮我更新入库</div>
+                </div>
+                <!-- 教程结尾步「接进你自己的 AI 助手」：复用帮助页 .help-agent-acts/.help-agent-note
+                     样式（零新增 CSS）；复制按钮接线走 interactions.js copyAgentPrompt 单一真源，
+                     「下载技能包」纯 <a download> 无需 JS。 -->
+                <div class="tour-visual tour-agent" data-onboarding-visual="agent" hidden>
+                    <div class="help-agent-acts">
+                        <button class="btn btn-primary" id="tourAgentPromptCopyBtn" type="button">复制接入提示词</button>
+                        <a class="btn" href="/api/guide/skill.zip" download>下载技能包</a>
+                    </div>
+                    <p class="help-agent-note">支持 Claude Code / Kimi Code / Codex，详情见提示词内说明。</p>
+                </div>
+            </div>
+        </div>
+        <div class="onboarding-actions">
+            <button class="btn onboarding-skip" id="onboardingSkip" type="button">跳过</button>
+            <span class="onboarding-spacer"></span>
+            <button class="btn" id="onboardingBack" type="button">上一步</button>
+            <button class="btn btn-primary" id="onboardingNext" type="button">下一步</button>
+        </div>
+    </div>
+</aside>
+
+<!-- 数据集全部文件弹窗（点卡片「查看全部 N 个文件」打开） -->
+<div class="modal-backdrop" id="filesModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="filesModalTitle">
+        <div class="modal-head">
+            <div>
+                <div class="modal-title" id="filesModalTitle">数据集文件</div>
+                <div class="modal-sub" id="filesModalSub">点每行右侧「下载 ↓」保存到本地</div>
+            </div>
+            <button class="icon-btn" id="filesModalClose" title="关闭" aria-label="关闭">✕</button>
+        </div>
+        <div class="modal-body" id="filesModalBody"></div>
+    </div>
+</div>
+
+<!-- 「数据集详情」打开独立浏览器标签页 /dataset（web/static/dataset.html + js/dataset_page.js），
+     内含介绍 / 全部文件 / 元数据兼容 / FAIR / 引文 / 对比六个子标签。
+     介绍内容的渲染函数在 cards.js，被详情页复用。 -->
+
+<!-- 用户记忆管理：显式保存、可检查、可复用、可删除；内容仅留在当前浏览器。 -->
+<div class="modal-backdrop" id="memoryModal" hidden>
+    <div class="modal memory-modal" role="dialog" aria-modal="true" aria-labelledby="memoryModalTitle" aria-describedby="memoryModalSub">
+        <div class="modal-head">
+            <div>
+                <div class="modal-title" id="memoryModalTitle">用户记忆</div>
+                <div class="modal-sub" id="memoryModalSub">仅保存在当前浏览器，不会自动发送给检索服务</div>
+            </div>
+            <button class="icon-btn" id="memoryModalClose" title="关闭" aria-label="关闭用户记忆">✕</button>
+        </div>
+        <div class="modal-body memory-modal-body">
+            <!-- dream 记忆（2026-08-02 手动「整理记忆」，设计决定可发 LLM）：
+                 历史对话发给用户自己配置的 AI → 封闭 JSON 候选 → 预览勾选后才写入。
+                 产出徽标「AI 整理」（kind:"dream"，工作层可淘汰），可「存为偏好」转正。 -->
+            <div class="dream-block" id="dreamBlock">
+                <div class="dream-head">
+                    <span class="dream-title"><strong>整理记忆</strong><small>让 AI 从历史对话中提炼值得长期记住的偏好；先预览，勾选后才写入</small></span>
+                    <button class="btn" id="dreamRunBtn" type="button">用历史对话整理记忆</button>
+                </div>
+                <div class="dream-consent" id="dreamConsent" hidden>
+                    <p>会把你的历史对话（检索需求 + 对话过程）发送到<b>你自己配置的 AI 服务</b>用于提炼记忆；提炼结果仍只存本机。只在你点这个按钮时发送，不会自动发。</p>
+                    <div class="dream-consent-acts">
+                        <button class="btn btn-primary" id="dreamConsentOk" type="button">知道了，开始整理</button>
+                        <button class="btn" id="dreamConsentCancel" type="button">取消</button>
+                    </div>
+                </div>
+                <div class="dream-status" id="dreamStatus" hidden></div>
+                <div class="dream-preview" id="dreamPreview" hidden></div>
+            </div>
+            <!-- 操作样例库（2026-08-13 用户挑选入库）：「一遍过」的成功操作只进候选池、不注入；
+                 你勾选入库的才作为 AI 理解类似说法的参考。只存本机，按账户 + AI 端点分区。 -->
+            <div class="dream-block" id="examplesBlock">
+                <div class="dream-head">
+                    <span class="dream-title"><strong>操作样例库</strong><small>干净完成的数据库维护操作会先存成候选；勾选入库的，才会作为 AI 理解类似说法的参考</small></span>
+                </div>
+                <div class="dream-status" id="examplesStatus" hidden></div>
+                <div class="dream-preview" id="examplesList" hidden></div>
+            </div>
+            <form class="memory-add" id="memoryAddForm">
+                <label for="memoryNoteInput">添加研究偏好</label>
+                <div><input id="memoryNoteInput" maxlength="300" placeholder="例如：优先看人类空间转录组数据"><button class="btn btn-primary" type="submit">添加</button></div>
+            </form>
+            <div class="memory-list-head"><span>已保存的记忆 <b id="memoryCount">0</b></span><button class="btn memory-clear" id="memoryClearBtn" type="button">清空全部</button></div>
+            <div class="memory-list" id="memoryList"></div>
+        </div>
+    </div>
+</div>
+
+<!-- benchmark 采集反馈（b1 支线版）：全量交互记录 + 评分 → 单个 JSON 文件下载回传。
+     与使用反馈同一开关、同一批红线：默认本地采集、尽力过滤后经明文 HTTP 上传（出网只经 usage_upload.js，
+     本文件零网络原语）；api_key 落盘前整键删除。导出反馈包是自动上传之外的手动兜底。 -->
+<div class="modal-backdrop" id="benchfbModal" hidden>
+    <div class="modal usage-modal" role="dialog" aria-modal="true" aria-labelledby="benchfbModalTitle" aria-describedby="benchfbModalSub">
+        <div class="modal-head">
+            <div>
+                <div class="modal-title" id="benchfbModalTitle">导出反馈包（benchmark 采集）</div>
+                <div class="modal-sub" id="benchfbModalSub">使用记录默认经尽力过滤后自动上传；这里的手动导出是留给需要人工回传时的兜底——下载后把它当文件发给开发者（微信可以直接发文件）。</div>
+            </div>
+            <button class="icon-btn" id="benchfbCloseBtn" title="关闭" aria-label="关闭导出反馈包">✕</button>
+        </div>
+        <div class="modal-body usage-modal-body">
+            <ul class="benchfb-summary" id="benchfbSummary"></ul>
+            <div class="benchfb-honesty">
+                <div><strong>包里包含：</strong>你的查询原话、每次的完整结果与执行过程（用了哪些排序/AI 层、各步耗时）、操作回执、你的评分/标注/评语、所用模型名与端点主机。</div>
+                <div><strong>不包含：</strong>API Key、密码、账户名——请求里的 Key 在落盘前就已整键删除，端点只留主机名；自由文本里的手机号/证件号/邮箱在上传前打码。</div>
+            </div>
+            <details class="benchfb-preview" id="benchfbPreviewWrap">
+                <summary>查看包原文（JSON，可全选复制）</summary>
+                <textarea id="benchfbPreview" spellcheck="false" readonly aria-label="反馈包原文预览"></textarea>
+            </details>
+            <div class="usage-actions">
+                <button class="btn btn-primary" id="benchfbDownloadBtn" type="button">下载反馈包文件</button>
+                <button class="btn usage-clear" id="benchfbClearBtn" type="button">清空本地待发记录</button>
+            </div>
+            <p class="usage-note">评分只在你最关注的检索/执行轮主动出现，每个会话最多两次；没听懂或失败的轮次可点「评价」按钮补评；不评分也照常采集。选完成度、标出有用条目、写一句评语，都会进采集记录并随自动上传回传。「清空本地待发记录」会删除当前账户尚未上传的 usage 与 benchmark 记录；已上传数据不会因此从服务器删除。</p>
+        </div>
+    </div>
+</div>
+
+<!-- 向开发者发送意见（UI 逻辑在 feedback.js，自接线）。
+     意见文本（必填，上限 2000 与 feedback_core.FEEDBACK_MAX_TEXT 同源）+ 默认勾选「附诊断信息」
+     （版本/平台/错误/功能计数 allowlist 聚合；遥测关闭如实显示「无可用统计」，不为诊断重启采集）
+     + 加密传输如实说明（内容经开发者公钥加密后发送；请勿包含 API Key、密码）。
+     发送 = 对该条不可变记录的明示单次授权：入 per-profile feedback_pending 队列 + sendFeedback()
+     （关遥测也能发，不改 usage 开关/consent）；失败提供「复制到剪贴板」与「复制并取消自动重试」。
+     公钥未配置/WebCrypto 不可用（hasSendChannel()=false）→ 不提供发送按钮，只给复制兜底。 -->
+<div class="modal-backdrop" id="feedbackModal" hidden>
+    <div class="modal usage-modal" role="dialog" aria-modal="true" aria-labelledby="feedbackModalTitle" aria-describedby="feedbackModalSub">
+        <div class="modal-head">
+            <div>
+                <div class="modal-title" id="feedbackModalTitle">向开发者发送意见</div>
+                <div class="modal-sub" id="feedbackModalSub">写下遇到的问题或改进建议；发送=对这条意见的明示授权，关闭使用反馈也能发。</div>
+            </div>
+            <button class="icon-btn" id="feedbackCloseBtn" title="关闭" aria-label="关闭意见对话框">✕</button>
+        </div>
+        <div class="modal-body usage-modal-body">
+            <label class="fb-label" for="feedbackText">意见</label>
+            <textarea class="fb-text" id="feedbackText" maxlength="2000" rows="6"
+                placeholder="例如：某次检索的结果与预期不符、某个功能不好用……（必填，最多 2000 字）"></textarea>
+            <div class="fb-count" id="feedbackCount">0 / 2000</div>
+            <label class="fb-diag" for="feedbackDiagChk">
+                <input type="checkbox" id="feedbackDiagChk" checked> 附诊断信息
+            </label>
+            <div class="fb-diag-summary" id="feedbackDiagSummary"></div>
+            <p class="usage-note" id="feedbackTransmitNote"></p>
+            <div class="usage-actions">
+                <button class="btn" id="feedbackCopyBtn" type="button" hidden>复制意见（含诊断信息）到剪贴板</button>
+                <button class="btn btn-primary" id="feedbackSendBtn" type="button" hidden>发送</button>
+            </div>
+            <div class="fb-fail" id="feedbackFailWrap" hidden>
+                <p class="fb-status" id="feedbackFailText" role="status"></p>
+                <div class="usage-actions">
+                    <button class="btn" id="feedbackFailCopyBtn" type="button">复制到剪贴板</button>
+                    <button class="btn" id="feedbackFailCopyCancelBtn" type="button">复制并取消自动重试</button>
+                </div>
+            </div>
+            <p class="fb-status" id="feedbackStatus" role="status" hidden></p>
+        </div>
+    </div>
+</div>
+
+<!-- 下一步行动·任务卡：结果页阶梯 chip 点开——
+     说明范围/预计输出/联网行为 + 可编辑任务文本 + 「开始」按钮才发送（不做静默执行，
+     不做填输入框迂回）。文本未经编辑直接发送 → 该轮 benchfb 轮次带 template_originated=true，
+     编辑过 → false；带 recipe 的卡在未编辑时携带 suggested_recipe（编辑后清空回普通路由）。
+     接线在 task_card.js（自接线不进 boot，同 feedback.js 哲学）。 -->
+<div class="modal-backdrop" id="taskCardModal" hidden>
+    <div class="modal usage-modal" role="dialog" aria-modal="true" aria-labelledby="taskCardTitle">
+        <div class="modal-head">
+            <div>
+                <div class="modal-title" id="taskCardTitle">下一步行动</div>
+                <div class="modal-sub">这是系统建议的一步；任务内容可直接修改，「开始」后才执行。</div>
+            </div>
+            <button class="icon-btn" id="taskCardCloseBtn" title="关闭" aria-label="关闭任务卡">✕</button>
+        </div>
+        <div class="modal-body usage-modal-body">
+            <div class="tc-meta" id="taskCardMeta"></div>
+            <label class="fb-label" for="taskCardText">任务内容（可直接修改）</label>
+            <textarea class="fb-text" id="taskCardText" rows="3"></textarea>
+            <div class="tc-fail" id="taskCardFail" hidden role="status"></div>
+            <div class="usage-actions">
+                <button class="btn" id="taskCardCancelBtn" type="button">取消</button>
+                <button class="btn btn-primary" id="taskCardStartBtn" type="button">开始</button>
+            </div>
+            <p class="fb-status" id="taskCardStatus" role="status" hidden></p>
+        </div>
+    </div>
+</div>
+
+<!-- consent 首次告知（S5，2026-08-22 如实化改写；fix1d 协议口径）：
+     首次发送/检索时若开关开且未同意，由 usage_upload.js 打开并等待——无 ✕、点遮罩不关闭、Esc 无效，不点确认不执行发送。
+    两个按钮：同意并继续（落 consent）／关闭采集并发送（调用方关开关，本次照常发）。
+    fix1d 文案纪律（2026-08-24 浓缩版）：弹窗只留用户必须知道的三件事——传什么/不传什么、怎么关闭；
+    完整口径（本地记录↔远端上传两分、明文 HTTP、保留期、删除途径）仍在「设置 → 使用反馈」采集卡片逐字属实。 -->
+<div class="modal-backdrop" id="consentModal" hidden>
+    <div class="modal consent-dialog" role="alertdialog" aria-modal="true" aria-labelledby="consentModalTitle" aria-describedby="consentModalBody">
+        <div class="modal-head">
+            <div>
+                <div class="modal-title" id="consentModalTitle">你的使用，在帮它变好</div>
+                <div class="modal-sub">默认开启本地采集 · 用于改进产品 · 可随时关闭</div>
+            </div>
+        </div>
+        <div class="modal-body" id="consentModalBody">
+            <p>默认会上传你的使用行为与对话记录（检索、结果、点开/下载、评分与评语），以及同意后产生的工具调用记录，用于改进推荐、产品体验和制作离线评测基准；不会上传 API Key、密码、账户名。<strong>这项授权本身不包含训练或微调模型。</strong></p>
+            <p>上传前会尽力过滤手机号、证件号、邮箱等敏感信息（并非匿名化），请勿输入敏感内容。可随时在「设置 → 使用反馈」关闭采集。</p>
+            <label class="consent-training"><input type="checkbox" id="consentTrainingOptIn"> 另行同意：允许把本次及后续已脱敏记录用于模型 / Agent 训练（可随时在设置中关闭）</label>
+            <div class="consent-acts">
+                <button class="btn btn-primary" id="consentAgreeBtn" type="button">同意并继续</button>
+                <button class="btn" id="consentDisableBtn" type="button">关闭采集并发送</button>
+            </div>
+            <p class="consent-note">「关闭采集并发送」会关闭本次采集、本次照常发送；之后可在「设置 → 使用反馈」重新打开。</p>
+        </div>
+    </div>
+</div>
+
+<!-- 标注模式浮条（benchmark 采集）：点卡片=标有用，再点取消；完成/结果区变化即收摊。 -->
+<div class="bf-mark-bar" id="bfMarkBar" hidden>
+    <span>正在标注：点卡片 = 有用，再点取消。已标 <strong id="bfMarkCount">0</strong> 条</span>
+    <button class="btn btn-primary" id="bfMarkDone" type="button">完成</button>
+</div>
+
+<!-- 本地账户：登录 / 注册。账户仅存在本机（scrypt 哈希），用于让共用电脑的多人各自拥有私有记忆。 -->
+<div class="modal-backdrop" id="accountModal" hidden>
+    <div class="modal account-modal" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle">
+        <div class="modal-head">
+            <div>
+                <div class="modal-title" id="accountModalTitle">登录 / 注册</div>
+                <div class="modal-sub" id="accountModalSub">账户仅存在本机；用于让共用电脑的多人各自拥有私有记忆</div>
+            </div>
+            <button class="icon-btn" id="accountModalClose" title="关闭" aria-label="关闭登录窗口">✕</button>
+        </div>
+        <div class="modal-body account-modal-body">
+            <form id="accountForm" autocomplete="on">
+                <label for="accountUsername">用户名</label>
+                <input id="accountUsername" name="username" autocomplete="username" maxlength="64" placeholder="3–32 位小写字母 / 数字 / 下划线 / 连字符">
+                <label for="accountPassword">密码</label>
+                <input id="accountPassword" name="password" type="password" autocomplete="current-password" maxlength="200" placeholder="至少 8 位">
+                <!-- T3 注册邀请：仅护栏模式（服务端要求邀请码）时显示；闸关的本机形态恒 hidden。 -->
+                <div id="accountInviteRow" hidden>
+                    <label for="accountInvite">邀请码（注册需要）</label>
+                    <input id="accountInvite" autocomplete="off" maxlength="200" placeholder="向管理员索取的注册邀请码">
+                </div>
+                <label class="account-remember" for="accountRemember"><input id="accountRemember" type="checkbox" checked> 记住我（30 天免登录；不勾则关掉浏览器就要重登）</label>
+                <div class="account-error" id="accountError" role="alert" hidden></div>
+                <div class="account-actions">
+                    <button class="btn btn-primary" type="submit" id="accountLoginBtn">登录</button>
+                    <button class="btn" type="button" id="accountRegisterBtn">注册新账户</button>
+                </div>
+                <p class="account-note">密码只在本机加密校验，绝不上传、绝不明文保存。忘记密码只能清空本机账户数据后重新注册。</p>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 我的库浮窗：双页签「追踪 / 收藏」（替换的「档案」单窗双 tab 合并）。
+     与主界面同层（非模态、不挡操作），标题栏可拖动、右下角可缩放；骨架（开合/拖动/缩放/落位/tab）
+     唯一属主在 shell.js（initLibWin），projects.js（追踪）与 browse.js（收藏）只经 setLibRenderer
+     注册各自页签的渲染器（注册反转，防新环）。
+     #artifactsWinBody 保留原名作追踪页签挂点：project_exports / project_updates / f1 e2e 全按它取节点。 -->
+<div class="hist-win" id="libWin" hidden role="dialog" aria-label="我的库" data-lib-active="tracks">
+    <div class="hw-head" id="libWinHead">
+        <span class="hw-title">我的库</span>
+        <span class="hw-sub" id="libWinSub">追踪的检索与收藏的数据集，只存在本地浏览器</span>
+        <div class="hw-acts">
+            <button class="hw-btn hw-close" id="libWinClose" type="button" aria-label="关闭我的库" title="关闭">✕</button>
+        </div>
+    </div>
+    <div class="arc-tabs" role="tablist" aria-label="我的库分类">
+        <button class="arc-tab is-on" id="libTabTracks" type="button" role="tab" aria-selected="true" aria-controls="artifactsWinBody" data-lib-tab="tracks">追踪</button>
+        <button class="arc-tab" id="libTabFavs" type="button" role="tab" aria-selected="false" aria-controls="libPaneFavs" data-lib-tab="favs">收藏</button>
+    </div>
+    <div class="hw-body" id="libWinBody">
+        <div class="arc-pane" id="artifactsWinBody" role="tabpanel" aria-labelledby="libTabTracks"></div>
+        <!-- 收藏页签（内容迁自原「我的收藏」视图；id 不变，fav_folders.js / browse.js 全按 id 取节点） -->
+        <div class="arc-pane" id="libPaneFavs" role="tabpanel" aria-labelledby="libTabFavs" hidden>
+            <div class="fav-folder-bar" id="favFolderBar" style="display:none">
+                <div class="fav-folder-tabs" id="favFolderTabs" role="tablist" aria-label="收藏夹"></div>
+                <button class="btn" id="favFolderManageBtn" type="button">管理收藏夹</button>
+            </div>
+            <div class="fav-folder-manage" id="favFolderManage" style="display:none"></div>
+            <div class="empty" id="favEmpty">
+                <div class="ei">❤️</div>
+                <p>还没有收藏。在查询或浏览结果里点右上角爱心即可收藏。</p>
+                <button class="btn btn-primary" data-goto="query">去找数据集</button>
+            </div>
+            <div class="reuse-bar" id="reuseBar" style="display:none">
+                <div class="reuse-bar-text"><strong>要把这些数据集写进论文？</strong>一键整理成投稿材料：英文段落 + 数据集清单 + 待核实项，可导出 RIS / BibTeX 引文。</div>
+                <div class="reuse-bar-acts"><select class="reuse-scope" id="reuseScope" aria-label="清单范围"></select><button class="btn btn-primary" id="reusePackBtn" type="button">生成投稿材料</button></div>
+            </div>
+            <div class="reuse-panel" id="reusePanel" style="display:none"></div>
+            <div class="grid" id="favGrid" style="display:none"></div>
+        </div>
+    </div>
+    <div class="hw-resize" id="libWinResize" aria-hidden="true" title="拖动调整大小"></div>
+</div>
+
+<!-- 历史记录浮窗（2026-08-23 独立单页签，恢复前结构）：
+     与主界面同层（非模态、不挡操作），标题栏可拖动、右下角可缩放；骨架唯一属主在 shell.js（initHistWin）。
+     历史行交互（2026-08-03 用户）：点行本体＝在本标签页找回这条对话（对话记录+细化+最后一轮结果
+     整体找回）；行尾动作＝新标签页打开（?conv= 链接，同一 localStorage，新标签页加载时自动回看）/
+     重新检索 / 删除（二段确认）。 -->
+<div class="hist-win" id="histWin" hidden role="dialog" aria-label="历史记录">
+    <div class="hw-head" id="histWinHead">
+        <span class="hw-title">历史记录</span>
+        <span class="hw-sub" id="histWinSub">只存在本地浏览器，最多 50 次检索</span>
+        <div class="hw-acts">
+            <button class="hw-btn" id="histClear" type="button">清空</button>
+            <button class="hw-btn hw-close" id="histWinClose" type="button" aria-label="关闭历史记录" title="关闭">✕</button>
+        </div>
+    </div>
+    <div class="hw-body" id="histWinBody">
+        <div class="hw-empty" id="histEmpty" hidden>
+            <div class="hw-ei">🕘</div>
+            <p>还没有历史记录。</p>
+        </div>
+        <div id="histList"></div>
+    </div>
+    <div class="hw-resize" id="histWinResize" aria-hidden="true" title="拖动调整大小"></div>
+</div>
+
+<!-- GSAP：本地随包（/static/vendor），无外网依赖、离线可用；未加载或用户偏好减弱动效时全部优雅降级 -->
+<script src="/static/vendor/gsap.min.js"></script>
+<script src="/static/vendor/ScrollTrigger.min.js"></script>
+
+<!-- C1 起 9 个基础层文件 + C2 起 cards/shell/results/facets/progress + C3 起 search/browse/
+     reuse_pack/fav_folders/interactions/onboarding + C4 起 board/task_pack/act/boot，共 25 个
+     标签全是 ES Module（type=module，全 deferred、先于 DOMContentLoaded 就绪）；C1-C3 文件里
+     尚未改写的裸引用经各自目标的 window 绞杀桥读取（统一删桥）。
+     加载序契约不变：core 最先、boot 最后。 -->
+<script type="module" src="/static/js/core/core.js?v=20260923-domainpack2"></script>
+<!-- usage_core 紧跟 core：使用反馈的纯聚合核（无 DOM/存储/墙钟/网络，node 可单测，C1 已转 ESM）。
+     usage_log 紧随其后（已转 ESM）：usageLog 经绞杀桥挂 window，后面每个经典模块照原样裸调
+     core.js 则经 import 取它。两者都不发任何网络请求，见 usage_log.js 文件头。 -->
+<script type="module" src="/static/js/core/usage_core.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/core/usage_log.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/core/benchfb_core.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/core/benchfb.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/panel/board_core.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/panel/memory_rank.js?v=20260923-domainpack2"></script>
+<!-- dream_core 紧跟 memory_rank：dream 记忆的纯核（素材组织/裁剪/去重，node 可单测，C1 已转 ESM），dream.js 经 import 调它。 -->
+<script type="module" src="/static/js/panel/dream_core.js?v=20260923-domainpack2"></script>
+<!-- act_core 执行层纯核（回执/注记构造 + tpBytes，node 可单测，C1 已转 ESM）：act.js 与 task_pack.js
+     （同为 ESM）经 import 共用；module 天然 deferred，仍先于 DOMContentLoaded（act.js 的 initAct 在 boot 里）就绪。 -->
+<script type="module" src="/static/js/act/act_core.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/panel/memory.js?v=20260923-domainpack2"></script>
+<!-- examples 操作样例库（2026-08-13 用户挑选入库）：候选池→勾选→正式库；memory.js 开弹窗时调它的 renderExampleCandidates。 -->
+<script type="module" src="/static/js/panel/examples.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/search/cards.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/core/shell.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/search/results.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/search/facets.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/core/progress.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/search/search.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/search/browse.js?v=20260923-domainpack2"></script>
+<!-- reuse_pack 紧跟 browse：同属收藏视图；只消费 core.js 的 getFavs/$/toast/escapeHtml。 -->
+<script type="module" src="/static/js/act/reuse_pack.js?v=20260923-domainpack2"></script>
+<!-- fav_folders 在 reuse_pack 之后、interactions 之前：心形 popover / 收藏夹 tab / 管理面板；
+     只调 core.js 的存储 CRUD 与 buildCard，顶层不引用未声明绑定。 -->
+<script type="module" src="/static/js/panel/fav_folders.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/core/interactions.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/core/onboarding.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/panel/board.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/act/task_pack.js?v=20260923-domainpack2"></script>
+<!-- act 紧跟 task_pack：一句话执行层派发的就是 task_pack / reuse_pack / results / cards 里那几件既有能力
+     （三者同为 ESM，同批互转走 import；board↔act 成环但绑定都只在函数体内使用）。 -->
+<script type="module" src="/static/js/act/act.js?v=20260923-domainpack2"></script>
+<!-- 执行行动流（act_run）；被 act.js/board.js 经 importmap 引用。 -->
+<script type="module" src="/static/js/act/act_run.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/panel/accounts.js?v=20260923-domainpack2"></script>
+<!-- dream.js 是**第一个 ES Module**（Phase C 模块化重写的试点）：type=module 天然 deferred、
+     先于 DOMContentLoaded 执行完；C4 起 window 绞杀桥已退役，boot 经 import { initDream } from "#dream" 直接取。 -->
+<script type="module" src="/static/js/panel/dream.js?v=20260923-domainpack2"></script>
+<!-- 课题：artifacts（数据层）+ projects_core（纯逻辑核）+ projects（UI 壳）。
+     projects.js 由 boot 经 #projects import 取 initProjects；三文件都在 importmap 登记。 -->
+<script type="module" src="/static/js/core/artifacts.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/core/projects_core.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/core/projects.js?v=20260923-domainpack2"></script>
+<!-- 意见反馈对话框：feedback_dialog_core（纯逻辑核，node 可单测）
+     + feedback（UI 壳，自接线不进 boot——boot 的 # import 会牵动两页 importmap，而 dataset.html
+     归 F2 并行包；与 usage_upload/feedback_core「不进静态图」同哲学，两键仅在本页 importmap 登记）。 -->
+<script type="module" src="/static/js/core/feedback_dialog_core.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/core/feedback.js?v=20260923-domainpack2"></script>
+<!-- 下一步行动：ladder_core（纯逻辑核，node 可单测）+
+     ladder（结果区壳，经 results.js 渲染钩子驱动）+ task_card（任务卡弹窗，自接线不进 boot——
+     与 feedback.js 同哲学：模块内互引走相对 import、不进静态 # 图，避免牵动 dataset.html；
+     三键仅在本页 importmap 登记，后续收口时决定 dataset.html 是否补键）。 -->
+<script type="module" src="/static/js/search/ladder_core.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/search/ladder.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/search/task_card.js?v=20260923-domainpack2"></script>
+<!-- 课题更新检查（2026-08-22；2026-08-26 改版）：
+     project_updates_core（纯逻辑核，node 可单测）+ project_updates（UI 壳，自接线不进 boot，
+     仅本页加载——F2 数据集页联动已随全体批量按钮退役）。projects.js 经 #project_updates
+     import 取详情区挂载/行检查/自动刷新完成钩子；壳层 import #core/#shell/#accounts 等，
+     浏览器自动补取。 -->
+<script type="module" src="/static/js/core/project_updates_core.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/core/project_updates.js?v=20260923-domainpack2"></script>
+<!-- 导出中心：project_exports_core（纯逻辑核，node 可单测）
+     + project_exports（UI 壳，自接线不进 boot——经 MutationObserver 发现 projects.js 的
+     ENG-P5-MOUNT 挂点渲染导出区；project_exports.js 只相对 import 纯逻辑核、不引入新的
+     # specifier，两键仅在本页 importmap 登记，dataset.html 不碰）。 -->
+<script type="module" src="/static/js/core/project_exports_core.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/panel/project_exports.js?v=20260923-domainpack2"></script>
+<!-- boot 是全应用唯一入口（起 ESM）：init 里每个名字都从属主模块 import，DOMContentLoaded 平铺串调。 -->
+<script type="module" src="/static/js/core/boot.js?v=20260923-domainpack2"></script>
+
+<footer class="deploy-footer"><!--deploy-footer--></footer>
+
+</body>
+</html>

@@ -1,0 +1,99 @@
+name: Web image
+
+# 网页版镜像：构建 + 容器冒烟 + 漏洞扫描（非阻断）。
+#
+# 触发范围刻意收窄到「会改变网页版镜像内容」的路径。路径过滤与 workflow_dispatch 为 OR：
+# 手动触发总是可跑；push 到 master 时只有命中以下路径才会触发。
+on:
+  push:
+    branches: [master]
+    paths:
+      - "deploy/web/**"                                # Dockerfile 与依赖锁定文件
+      - "src/**"                                       # 后端源码
+      - "web/**"                                       # 前端静态资源
+      - "database/**"                                # 语料/向量快照整个目录（Dockerfile COPY database/ 全量烤入）
+      - "scripts/run_web.py"                           # 网页版启动入口
+      - "使用教程/**"                                  # 随包静态资源（上传规范 / 接入提示词）
+      - ".agents/**"                                   # biodata-dataset-discovery 技能目录
+  workflow_dispatch:
+
+# 默认零令牌权限；仅 checkout 的 job 按需申请 contents: read。
+permissions: {}
+
+concurrency:
+  group: web-image-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-smoke:
+    name: build and smoke / web image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the exact revision
+        # 语料向量文件是普通 tracked 文件（约 39MB，非 LFS），默认 checkout 即可完整取出。
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Build the web image
+        # 构建上下文 = 仓库根；不传 PIP_INDEX_URL，GitHub runner 直连 PyPI 更快。
+        run: "docker build -f deploy/web/Dockerfile -t biodata-web:ci ."
+
+      - name: Smoke-test the container
+        run: |
+          set -euo pipefail
+          CONTAINER_NAME="biodata-web-smoke"
+          PORT="8510"
+
+          cleanup() {
+            docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          docker run -d \
+            --name "$CONTAINER_NAME" \
+            -p "${PORT}:${PORT}" \
+            -e "PORT=${PORT}" \
+            -e "BIODATA_WEB_HOST=0.0.0.0" \
+            biodata-web:ci
+
+          health_json="$(mktemp)"
+          healthy=0
+          for _ in $(seq 1 120); do
+            if curl -sf "http://127.0.0.1:${PORT}/api/health" -o "$health_json"; then
+              healthy=1
+              break
+            fi
+            sleep 1
+          done
+
+          if [ "$healthy" -ne 1 ]; then
+            echo "::error::/api/health 在 120 秒内未返回 200"
+            docker logs "$CONTAINER_NAME" || true
+            exit 1
+          fi
+
+          if ! python3 -c 'import json, sys; d = json.load(sys.stdin); sys.exit(0 if d.get("ok") is True else 1)' < "$health_json"; then
+            echo "::error::健康检查 JSON 断言失败：.ok != true"
+            cat "$health_json" || true
+            docker logs "$CONTAINER_NAME" || true
+            exit 1
+          fi
+
+          echo "健康检查通过：/api/health 返回 200 且 .ok == true"
+
+      - name: Scan the image for known vulnerabilities (non-blocking)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: "biodata-web:ci"
+          severity: "CRITICAL,HIGH"
+          exit-code: "0"
+          ignore-unfixed: true
+          format: "table"
+          # 关闭 actions/cache：避免为缓存放开 actions 写权限；扫描完整执行，仅每次重下 Trivy 漏洞库。
+          cache: "false"
+        # 刻意非阻断：exit-code 恒为 0，只把 CRITICAL/HIGH 以 table 形式可视化，暂不卡门。
+        # 卡门策略（如 exit-code 置 1 + 明确 .trivyignore 忽略清单）留待后续再定。

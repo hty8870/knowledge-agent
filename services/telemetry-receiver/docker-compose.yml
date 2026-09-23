@@ -1,0 +1,58 @@
+# Generic receiver and storage template. Supply credentials and infrastructure settings externally.
+services:
+  receiver:
+    build: .
+    container_name: biodata-telemetry-receiver
+    restart: unless-stopped
+    ports:
+      - "8471:8471"
+    environment:
+      INGEST_TOKEN: ${INGEST_TOKEN:?缺少 INGEST_TOKEN，请在 .env 中配置}
+      STATS_TOKEN: ${STATS_TOKEN:?缺少 STATS_TOKEN，请在 .env 中配置}
+      DATABASE_URL: postgresql+psycopg2://telemetry:${DB_PASSWORD:?缺少 DB_PASSWORD，请在 .env 中配置}@db:5432/biodata_telemetry
+      BODY_READ_TIMEOUT: ${BODY_READ_TIMEOUT:-}
+      DAILY_BYTES_BUDGET: ${DAILY_BYTES_BUDGET:-}
+      PER_IP_DAILY_BYTES: ${PER_IP_DAILY_BYTES:-}
+      PER_INSTALL_DAILY_PACKETS: ${PER_INSTALL_DAILY_PACKETS:-}
+      RETENTION_DAYS: ${RETENTION_DAYS:-90}
+      RETENTION_INTERVAL_SECONDS: ${RETENTION_INTERVAL_SECONDS:-86400}
+      EXPORT_DIR: /data/export
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-}
+      PROFILE_RATE_LIMIT_MAX: ${PROFILE_RATE_LIMIT_MAX:-}
+      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      ALLOWED_ORIGIN_REGEX: ${ALLOWED_ORIGIN_REGEX:-}
+      FEEDBACK_DECRYPT_KEY: ${FEEDBACK_DECRYPT_KEY:-}
+      UVICORN_WORKERS: ${UVICORN_WORKERS:-1}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-5}
+      DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-5}
+      DB_POOL_TIMEOUT: ${DB_POOL_TIMEOUT:-10}
+    command: ["sh", "-c", "exec uvicorn app:app --host 0.0.0.0 --port 8471 --workers $${UVICORN_WORKERS:-1}"]
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ${TELEMETRY_SCRIPTS_DIR:-./scripts}:/opt/telemetry/scripts:ro
+      - ${TELEMETRY_EXPORT_DIR:-./export}:/data/export
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8471/healthz')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  db:
+    image: postgres:16@sha256:56f243d2355bad7d2016b1e78b80da8ac9e7967b766be2bfbff84fe85ffa30bc
+    container_name: biodata-telemetry-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: telemetry
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?缺少 DB_PASSWORD，请在 .env 中配置}
+      POSTGRES_DB: biodata_telemetry
+    volumes:
+      - ${TELEMETRY_PGDATA_DIR:-./pgdata}:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U telemetry -d biodata_telemetry"]
+      interval: 5s
+      timeout: 3s
+      retries: 12

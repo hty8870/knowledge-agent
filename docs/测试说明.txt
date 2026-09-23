@@ -1,0 +1,102 @@
+BioData Agent · 本地启动与验收
+================================
+
+（布局说明：本文件按交付包布局书写；GitHub 仓库克隆里 mcp_server.py 位于 src/dataset_recommender/app/ 下，
+requirements 依赖清单位于 requirements/ 目录下，路径以克隆布局为准。）
+
+一、Windows 快速启动
+
+  1. 确认已安装 Python 3.10 或更高版本。
+  2. 双击“打开前端.bat”或“start-web.bat”。
+  3. 首次运行会自动准备 Python 环境（优先用项目自带或本机已有的合适环境，都没有才新建），按需安装 requirements.txt 中的基础依赖。
+  4. 浏览器会自动打开 http://127.0.0.1:7860 。
+
+首次安装依赖需要网络。以后启动会复用已有环境，无需重复安装。
+关闭启动窗口即可停止服务。
+
+如果未自动打开浏览器，请先确认启动窗口没有报错，再手动访问：
+  http://127.0.0.1:7860
+
+若 7860 已被占用，启动器会自动改用 7861-7869 中的第一个空闲端口，实际地址以启动窗口显示的 URL 为准；若占用者就是同一版本的 BioData Agent，则直接打开已在运行的那个。也可以在 PowerShell 中指定端口：
+  $env:PORT = '7861'
+  .\打开前端.bat
+
+若 Python 没有加入 PATH，可指定解释器：
+  $env:BIODATA_PYTHON = 'D:\Python312\python.exe'
+  .\打开前端.bat
+
+------------------------------------------------
+
+二、最小功能验收
+
+  1. 打开首页，输入：推荐有 FASTQ 的人类乳腺癌数据
+  2. 确认页面能显示自动识别到的来源 / 时间等条件、推荐结果，以及结果上方的检索摘要（一句话说明用了哪些排序方式、库中共匹配多少条）。
+  3. 打开“数据集浏览”，确认来源筛选和分页可用。
+  4. 打开“设置”，确认排序策略和 AI / API 配置可以展开、保存。
+  5. 访问 http://127.0.0.1:7860/api/health，确认返回 ok=true、version="3.0.0"。
+
+不配置 API Key 也能完成上述验收。规则检索始终可用。
+
+------------------------------------------------
+
+三、开发者自动化检查（仅维护者需要，普通使用者可直接跳到第五节）
+
+先在项目根目录设置实际 Python。Windows 默认虚拟环境示例：
+  $Python = '.\.venv\Scripts\python.exe'
+
+先查看统一质量门：
+  & $Python scripts\quality_gate.py --list
+  & $Python scripts\quality_gate.py --profile full --dry-run
+
+日常快速检查：
+  & $Python scripts\quality_gate.py --profile fast --report-json artifacts\quality-fast-local.json
+
+交付前完整检查：
+  & $Python scripts\quality_gate.py --profile full --report-json artifacts\quality-full-local.json
+
+fast 检查 Python/JavaScript 语法与自动化契约。full 还检查依赖一致性、Agent 治理、
+全量 pytest、项目/Web/MCP smoke 与冻结推荐评测。质量门不安装依赖，会清除真实密钥和
+进程注入变量、禁用模型下载，并以离线环境和「代理绊线」（把网络代理变量指向不可用地址，一旦联网即失败）约束受审查命令；它不是操作系统级
+网络沙箱。缺少 Node.js、PowerShell、MCP 依赖或其他必需工具时会失败，
+不要把「工具没装齐」当成通过来记录——缺工具时质量门本来就应该是失败。
+
+需要定位失败时可单独执行：
+  & $Python -m pytest tests\ -q
+  & $Python scripts\smoke_test.py
+  & $Python scripts\web_smoke_test.py
+
+MCP 自检使用 MCP 安装教程创建的专用 Python：
+  $McpPython = Join-Path $env:LOCALAPPDATA 'BioDataAgent\mcp-venv\Scripts\python.exe'
+  & $McpPython mcp_server.py --selfcheck
+
+修改查询解析、数据装载、检索或排序后，再执行：
+  & $Python scripts\evaluate_recommendation.py
+
+------------------------------------------------
+
+四、候选发布包
+
+只有 full 通过后才构建候选包：
+  & $Python scripts\build_release.py build --output-dir artifacts\candidate-3.0.0 --expected-version 3.0.0
+  & $Python scripts\build_release.py verify --archive artifacts\candidate-3.0.0\biodata-agent-release-candidate.zip
+
+候选 ZIP 必须解压到仓库外的全新临时目录，再运行项目 smoke、Web smoke 和 MCP selfcheck。
+不要解压到仓库内部，否则发布包内容会与仓库文件混在一起、干扰校验与运行。保留 ZIP、
+.zip.sha256、release-manifest.json、full JSON 报告和上一份已验证候选包，作为复验与回滚证据。
+构建器默认拒绝覆盖已存在的候选包（ZIP 与同名 .zip.sha256 这一对文件）；每次正式构建应使用新的版本/时间证据目录。
+
+仓库中的 GitHub workflow 只是可执行配置，不代表已在 GitHub 实跑。当前流程不创建
+GitHub Release，也不部署生产环境。详细步骤见 docs/AUTOMATION_AND_RELEASE.md。
+
+------------------------------------------------
+
+五、本地语义模型
+
+本地精准重排的模型权重不随提交包分发。不安装模型时，系统会自动回退到规则排序，
+不影响基础功能验收。
+
+需要完整的本地语义排序时执行：
+  & $Python -m pip install -r requirements-embeddings.txt
+  & $Python scripts\fetch_embedding_model.py
+
+详细使用说明见 README.md，开发说明见 DEVELOPMENT.md。

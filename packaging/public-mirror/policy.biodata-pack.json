@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "transform_version": "3",
+  "private_repository": "hty8870/biodata-agent-private",
+  "public_repository": "hty8870/biodata-domain-pack",
+  "mappings": {
+    ".gitignore": ".gitignore.biodata-pack.public",
+    "eval/evaluation-manifest.json": "eval/evaluation-manifest.public.json"
+  },
+  "generated_paths": [
+    "public-mirror.json"
+  ],
+  "forbidden_output_prefixes": [
+    "协同/",
+    "开发日志归档/",
+    "docs/agent/",
+    "docs/工作记录/",
+    "docs/归档/",
+    "docs/汇报/",
+    "research/",
+    "工作笔记/"
+  ],
+  "forbidden_text_fragments": [
+    "开发日志归档/",
+    "docs/工作记录/",
+    "docs/归档/",
+    "docs/汇报/",
+    "协同/认领/",
+    "协同/交接/"
+  ],
+  "allowed_email_paths": [],
+  "allowed_global_ip_prefixes": [
+    "database/"
+  ],
+  "allowed_global_ip_paths": [],
+  "allowed_private_reference_paths": [
+    "packaging/public-mirror/policy.json"
+  ]
+}

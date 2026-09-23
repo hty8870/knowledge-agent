@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 构建标记：与 index.html 同判据——详情页也加载 usage_log，
+     采集默认态在此页以该标记为显式判据，与主页口径一致。 -->
+<meta name="biodata-build" content="benchfb">
+<!-- Keep telemetry configuration aligned with index.html. The client validates the configured endpoint and transport policy before upload. -->
+<meta name="biodata-telemetry-endpoint" content="http://<server-ip>:8471/v1/ingest">
+<meta name="biodata-telemetry-token" content="<your-ingest-token>">
+<meta name="biodata-telemetry-allow-insecure" content="<server-ip>">
+<meta name="biodata-prompt-version" content="">
+<meta name="biodata-experiment-id" content="">
+<meta name="biodata-experiment-arm" content="">
+<meta name="biodata-experiment-propensity" content="">
+<meta name="biodata-experiment-arms" content="">
+<title>数据集介绍 · BioData Agent</title>
+<link rel="stylesheet" href="/static/css/app.css?v=20260923-domainpack2">
+<link rel="icon" href="/favicon.ico" type="image/svg+xml">
+<!-- C4：importmap 是首页键集的子集（38/45 键，缺 #feedback/#ladder/#task_card/#project_exports 等本页不用的 7 键）；
+     键数随首页增删漂移，以两页 importmap 实数为准，勿在本注释里钉死总数。本页实际加载十个 ESM。 -->
+<script type="importmap">
+{"imports": {
+    "#core": "/static/js/core/core.js?v=20260923-domainpack2",
+    "#usage_core": "/static/js/core/usage_core.js?v=20260923-domainpack2",
+    "#usage_log": "/static/js/core/usage_log.js?v=20260923-domainpack2",
+    "#benchfb_core": "/static/js/core/benchfb_core.js?v=20260923-domainpack2",
+    "#benchfb": "/static/js/core/benchfb.js?v=20260923-domainpack2",
+    "#board_core": "/static/js/panel/board_core.js?v=20260923-domainpack2",
+    "#memory_rank": "/static/js/panel/memory_rank.js?v=20260923-domainpack2",
+    "#dream_core": "/static/js/panel/dream_core.js?v=20260923-domainpack2",
+    "#act_core": "/static/js/act/act_core.js?v=20260923-domainpack2",
+    "#downloads": "/static/js/core/downloads.js?v=20260923-domainpack2",
+    "#memory": "/static/js/panel/memory.js?v=20260923-domainpack2",
+    "#examples": "/static/js/panel/examples.js?v=20260923-domainpack2",
+    "#accounts": "/static/js/panel/accounts.js?v=20260923-domainpack2",
+    "#cards": "/static/js/search/cards.js?v=20260923-domainpack2",
+    "#shell": "/static/js/core/shell.js?v=20260923-domainpack2",
+    "#results": "/static/js/search/results.js?v=20260923-domainpack2",
+    "#facets": "/static/js/search/facets.js?v=20260923-domainpack2",
+    "#progress": "/static/js/core/progress.js?v=20260923-domainpack2",
+    "#search": "/static/js/search/search.js?v=20260923-domainpack2",
+    "#browse": "/static/js/search/browse.js?v=20260923-domainpack2",
+    "#reuse_pack": "/static/js/act/reuse_pack.js?v=20260923-domainpack2",
+    "#fav_folders": "/static/js/panel/fav_folders.js?v=20260923-domainpack2",
+    "#interactions": "/static/js/core/interactions.js?v=20260923-domainpack2",
+    "#onboarding": "/static/js/core/onboarding.js?v=20260923-domainpack2",
+    "#dataset_page": "/static/js/search/dataset_page.js?v=20260923-domainpack2",
+    "#sync_button_core": "/static/js/search/sync_button_core.js?v=20260923-domainpack2",
+    "#sync_button": "/static/js/search/sync_button.js?v=20260923-domainpack2",
+    "#board": "/static/js/panel/board.js?v=20260923-domainpack2",
+    "#task_pack": "/static/js/act/task_pack.js?v=20260923-domainpack2",
+    "#act": "/static/js/act/act.js?v=20260923-domainpack2",
+    "#act_run": "/static/js/act/act_run.js?v=20260923-domainpack2",
+    "#dream": "/static/js/panel/dream.js?v=20260923-domainpack2",
+    "#artifacts": "/static/js/core/artifacts.js?v=20260923-domainpack2",
+    "#projects_core": "/static/js/core/projects_core.js?v=20260923-domainpack2",
+    "#projects": "/static/js/core/projects.js?v=20260923-domainpack2",
+    "#project_updates_core": "/static/js/core/project_updates_core.js?v=20260923-domainpack2",
+    "#project_updates": "/static/js/core/project_updates.js?v=20260923-domainpack2",
+    "#batch_select": "/static/js/core/batch_select.js?v=20260923-domainpack2",
+    "#flow_trace": "/static/js/core/flow_trace.js?v=20260923-domainpack2",
+    "#boot": "/static/js/core/boot.js?v=20260923-domainpack2"
+}}
+</script>
+</head>
+<!-- 「查看介绍」从模态弹窗改为**独立浏览器标签页**。本页只静态骨架，数据由 dataset_page.js
+     从 location.search（uid/url/name/source）+ 打开前写入的 localStorage 视图记录（完整字段）读取，
+     再调既有 /api/introduction·/api/files·/api/fair·/api/compatible·/api/reuse-pack 渲染，无服务端渲染、不写入。 -->
+<body class="dataset-page-body">
+
+<div class="ds-page" id="dsPage">
+    <div class="ds-topbar">
+        <a class="ds-back" href="/" title="返回检索主页">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+            <span class="wordmark" aria-label="BioData Agent"><span class="wm-bio" aria-hidden="true">Bi<svg class="wm-o" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="7.2" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M11 4.2 C5.6 8.2 16.4 13.8 11 17.8" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".62"/></svg></span><span aria-hidden="true">Data&nbsp;Agent</span></span>
+        </a>
+    </div>
+
+    <header class="ds-head">
+        <div class="ds-head-row">
+            <h1 class="ds-title" id="dsTitle">数据集介绍</h1>
+            <button class="fav ds-fav" id="dsFav" type="button" title="收藏" aria-label="收藏该数据集"></button>
+        </div>
+        <div class="ds-badges" id="dsBadges"></div>
+        <div class="ds-sub" id="dsSub"></div>
+        <div class="ds-actions" id="dsActions"></div>
+    </header>
+
+    <!-- 一键同步：官方源更新检查+导入，仅入外部库、可整次撤回。
+         三态渲染/状态机在 js/search/sync_button.js（自挂 DOMContentLoaded）；此处只放挂点骨架。 -->
+    <section class="ds-sync" id="dsSync" aria-label="数据集同步"></section>
+
+    <nav class="ds-tabs" id="dsTabs" role="tablist" aria-label="数据集介绍分区"></nav>
+
+    <main class="ds-panels" id="dsPanels">
+        <section class="ds-panel" id="dsPanel-intro" role="tabpanel" aria-labelledby="dstab-intro"></section>
+        <section class="ds-panel" id="dsPanel-files" role="tabpanel" aria-labelledby="dstab-files" hidden></section>
+        <section class="ds-panel" id="dsPanel-compat" role="tabpanel" aria-labelledby="dstab-compat" hidden></section>
+        <section class="ds-panel" id="dsPanel-fair" role="tabpanel" aria-labelledby="dstab-fair" hidden></section>
+        <section class="ds-panel" id="dsPanel-cite" role="tabpanel" aria-labelledby="dstab-cite" hidden></section>
+        <section class="ds-panel" id="dsPanel-compare" role="tabpanel" aria-labelledby="dstab-compare" hidden></section>
+    </main>
+</div>
+
+<!-- 文件弹窗（兼容卡的「查看全部 N 个文件」复用；与首页 filesModal 同结构，openFilesModal/closeFilesModal 在 cards.js） -->
+<div class="modal-backdrop" id="filesModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="filesModalTitle">
+        <div class="modal-head">
+            <div>
+                <div class="modal-title" id="filesModalTitle">数据集文件</div>
+                <div class="modal-sub" id="filesModalSub">点每行右侧「下载 ↓」保存到本地</div>
+            </div>
+            <button class="icon-btn" id="filesModalClose" title="关闭" aria-label="关闭">✕</button>
+        </div>
+        <div class="modal-body" id="filesModalBody"></div>
+    </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/static/vendor/gsap.min.js"></script>
+<script src="/static/vendor/ScrollTrigger.min.js"></script>
+<script type="module" src="/static/js/core/core.js?v=20260923-domainpack2"></script>
+<!-- usage_core.js + usage_log.js：**本页显式加载是双保险**。core.js 的 toggleFav 与 cards.js 的
+     buildCard 都直接调 usageLog/USAGE_KINDS（不加 typeof 守卫是本仓库的既定做法：让打错的名字当场炸）；
+     ESM 下这两条 import 边本会让浏览器按 importmap 自动补取，显式 script 标签由
+     tests/test_release_version_contract.py 钉死——防的是 import 边未来被误删时的静默失能：
+     收藏其实已写进 localStorage，但按钮不变实心、不弹 toast，看起来像「点了没反应」。
+     两个文件顶层都只有声明、无 DOM 访问，且 initUsage 逐元素守卫，本页不接线也安全
+     （反馈面板的 DOM 只在 index.html 有）。 -->
+<script type="module" src="/static/js/core/usage_core.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/core/usage_log.js?v=20260923-domainpack2"></script>
+<!-- cards.js：buildCard（兼容卡=全检索卡）+ 介绍内容渲染（renderIntroduction/loadFairInto/loadCompatInto/loadCiteInto/loadFilesInto）+ 文件弹窗，本页复用 -->
+<script type="module" src="/static/js/search/cards.js?v=20260923-domainpack2"></script>
+<!-- fav_folders.js：兼容卡与页头心形的收藏 popover（顶层无 DOM 访问、renderFavorites 仅在收藏视图触发、本页安全） -->
+<script type="module" src="/static/js/panel/fav_folders.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/search/dataset_page.js?v=20260923-domainpack2"></script>
+<!-- sync_button.js + sync_button_core.js：一键同步按钮（三态 UI + 撤销）。
+     壳层 import #core/#usage_core/#usage_log/#sync_button_core，浏览器按 importmap 自动补取；
+     sync_button_core 为纯逻辑核（零 DOM），node 规格 tests/js/sync_button_core_spec.mjs 直测。
+     2026-08-26：F2「并检查 N 个追踪的更新」联动随全体批量按钮退役
+     本页不再加载 project_updates（壳只在 index.html 工作）。 -->
+<script type="module" src="/static/js/search/sync_button.js?v=20260923-domainpack2"></script>
+<script type="module" src="/static/js/search/sync_button_core.js?v=20260923-domainpack2"></script>
+
+</body>
+</html>
