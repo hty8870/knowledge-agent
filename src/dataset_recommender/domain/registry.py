@@ -1,5 +1,8 @@
 """领域注册表：当前活动 DomainPack 的解析与缓存（骨架访问领域数据的唯一入口）。
 
+本仓（knowledge-agent-private）是骨架的真源与项目本体；产品侧（如 biodata-agent-private）
+的骨架区是本仓的只读快照，经其 `scripts/assemble_biodata.py` 装配器覆盖写入。
+
 解析顺序：`BIODATA_DOMAIN_DIR`（外部领域包目录，含 pack.py）→ `BIODATA_DOMAIN`
 （内置包 id）→ 默认 `"biodata"`。不设任何环境变量时解析为内置 biodata 包，
 一切行为与旧版逐位一致。
