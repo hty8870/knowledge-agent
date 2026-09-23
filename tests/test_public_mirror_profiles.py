@@ -16,11 +16,15 @@ def _lines(name: str) -> list[str]:
     return [line.strip() for line in (MIRROR_DIR / name).read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
+#: 装配体私有仓独有的产品侧工具（既不进骨架仓也不进领域包仓）——并集覆盖断言的显式豁免。
+PRODUCT_ONLY = {"scripts/assemble_biodata.py"}
+
+
 def test_profile_union_covers_assembled() -> None:
     assembled = set(_lines("files.txt"))
     skeleton = set(_lines("files.skeleton.txt"))
     pack = set(_lines("files.biodata-pack.txt"))
-    assert skeleton | pack == assembled
+    assert skeleton | pack | PRODUCT_ONLY == assembled
     overlap = (skeleton & pack) - {".gitignore"}
     assert not overlap, f"骨架与领域包清单出现非 .gitignore 重叠: {sorted(overlap)[:10]}"
 

@@ -134,6 +134,7 @@ requirements/requirements-mq.txt
 requirements/requirements-webview.txt
 requirements/requirements.txt
 scripts/aggregate_multicall_arms.py
+scripts/assemble_biodata.py
 scripts/audit_metadata_coverage.py
 scripts/augment_agent_cases.py
 scripts/augment_vec_scores.py
