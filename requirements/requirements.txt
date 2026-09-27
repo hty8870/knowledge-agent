@@ -3,7 +3,7 @@
 # see 使用教程/MCP安装/MCP_安装教程.md and requirements-embeddings.txt.
 python-dotenv>=1.2.3
 fastapi>=0.141.1
-uvicorn>=0.52.4
+uvicorn>=0.53.0
 python-multipart>=0.0.32
 httpx>=0.28.1
 # rerank 处方层 repair 术式的拼音整词纠错（agent_exec `_repair_route` 拼音索引）；
