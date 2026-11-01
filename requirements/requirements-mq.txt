@@ -5,4 +5,4 @@
 # 见 deploy/web/docker-compose.mq.example.yml 与 deploy/web/README.md §10）。
 # 安装：pip install -r requirements/requirements-mq.txt
 redis>=8.1.0
-rq>=2.12.0
+rq>=3.0.0
